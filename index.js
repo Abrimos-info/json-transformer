@@ -47,7 +47,7 @@ function pntTransform(obj, extraData=null) {
     let newObj = {
         id: obj['id'],
         sujeto: obj['sujetoobligado'],
-        fecha: getPntFecha(obj['periodoreporta']),
+        date: getPntFecha(obj['periodoreporta']),
         size: JSON.stringify(obj).length
     }
     if(extraData) {
