@@ -4,7 +4,8 @@ const es = require('event-stream');
 const commandLineArgs = require('command-line-args');
 
 const optionDefinitions = [
-    { name: 'transform', alias: 't', type: String }
+    { name: 'transform', alias: 't', type: String },
+    { name: 'data', alias: 'd', type: String }
 ];
 const args = commandLineArgs(optionDefinitions);
 
@@ -16,6 +17,8 @@ process.stdin
     switch(args.transform) {
         case 'guatecompras':
             return guatecomprasTransform(obj);
+        case 'pnt':
+            return pntTransform(obj, args.data);
         default:
             return obj;
     }
@@ -36,4 +39,30 @@ function guatecomprasTransform(obj, type) {
 	} );
     }
     return obj;
+}
+
+function pntTransform(obj, extraData=null) {
+    if(!obj.periodoreporta) return null;
+
+    let newObj = {
+        id: obj['id'],
+        sujeto: obj['sujetoobligado'],
+        fecha: getPntFecha(obj['periodoreporta']),
+        size: JSON.stringify(obj).length
+    }
+    if(extraData) {
+        let extraFields = extraData.split('|');
+        extraFields.map( f => {
+            let [key, value] = f.split(':');
+            newObj[key] = value;
+        } );
+    }
+
+    return newObj;
+}
+
+function getPntFecha(str) {
+    let dates = str.split(' - ');
+    let parts = dates[0].split('/');
+    return parts[2] + '-' + parts[1] + '-' + parts[0] + 'T00:00:000-06:00';
 }
