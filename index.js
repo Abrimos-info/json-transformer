@@ -64,5 +64,5 @@ function pntTransform(obj, extraData=null) {
 function getPntFecha(str) {
     let dates = str.split(' - ');
     let parts = dates[0].split('/');
-    return parts[2] + '-' + parts[1] + '-' + parts[0] + 'T00:00:000-06:00';
+    return parts[2] + '-' + parts[1] + '-' + parts[0] + 'T00:00:00.000-06:00';
 }
