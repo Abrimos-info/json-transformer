@@ -43,7 +43,7 @@ function guatecomprasTransform(obj) {
     if(obj.hasOwnProperty('contracts')) {
 	obj.contracts.map( c => {
 	    if(c.hasOwnProperty('dateSigned')) {
-		c.dateSigned = c.dateSigned.replace(' ', '');
+		    c.dateSigned = c.dateSigned.replace(' ', '');
 	    }
 	} );
     }
@@ -125,6 +125,8 @@ function pntContratosTransform(obj) {
     if(obj.complementoPrincipal?.fechaInicioPeriodo)
         obj.complementoPrincipal.fechaInicioPeriodo = parsePntFecha(obj.complementoPrincipal.fechaInicioPeriodo);
 
+    if(extraData) Object.assign(obj, extraData);
+
     return obj;
 }
 
@@ -140,6 +142,8 @@ function pntServidoresTransform(obj) {
 
     if(obj.complementoPrincipal?.fechaInicioPeriodo)
         obj.complementoPrincipal.fechaInicioPeriodo = parsePntFecha(obj.complementoPrincipal.fechaInicioPeriodo);
+
+    if(extraData) Object.assign(obj, extraData);
 
     return obj;
 }
