@@ -51,45 +51,68 @@ function guatecomprasTransform(obj) {
 }
 
 function pntTransform(obj) {
-    if(!obj.periodoreporta) return null;
+    if(!obj.periodoreporta && !obj.periodoinforma) return null;
+    if(obj.periodoinforma)
+        obj.date = getPntFechaFromRange(obj['periodoinforma']);
+    else if(obj.periodoreporta)
+        obj.date = getPntFechaFromRange(obj['periodoreporta']);
 
     if(extraData) {
         switch(extraData.folder) {
             case 'Contratos':
                 return pntContratosTransform(obj);
-            case 'Servidores_sancionados':
-                return pntServidoresTransform(obj);
+            
             case 'Directorio':
-            case 'Ejercicio presupuestos':
-            case 'Padrón de beneficiarios':
-            case 'Presupueso_anual':
-            case 'Resoluciones':
+            case 'Servidores_sancionados':
             case 'Servicios':
-            case 'Sueldos':
             case 'Tramites':
-            default:
                 return pntDefaultTransform(obj);
+            
+            case 'Sueldos':
+                return pntSueldosTransform(obj);
+            
+            case 'Ejercicio presupuestos':
+                return pntEjercicioPresupuestosTransform(obj);
+            
+            case 'Padrón de beneficiarios':
+                return pntBeneficiariosTransform(obj);
+            
+            case 'Presupueso_anual':
+                return pntPresupuestoAnualTransform(obj);
+            
+            case 'Resoluciones':
+                return pntResolucionesTransform(obj);
+
+            default:
+                return pntMinimalTransform(obj);
         }
     }
 }
 
-function pntDefaultTransform(obj) {
-    let newObj = {
-        id: obj.id,
-        sujeto: obj.sujetoobligado,
-        date: getPntFechaFromRange(obj.periodoreporta),
-        size: JSON.stringify(obj).length
-    }
+function pntBeneficiariosTransform(obj) {
+    if(obj.informacionPrincipal?.fechaaltabeneficiaria)
+        obj.informacionPrincipal.fechaaltabeneficiaria = parsePntFecha(obj.informacionPrincipal.fechaaltabeneficiaria);
 
-    if(extraData) Object.assign(newObj, extraData);
+    if(obj.montorecibido)
+        obj.montorecibido = parsePntMonto(obj.montorecibido);
+    else obj.montorecibido = 0;
 
-    return newObj;
+    if(obj.informacionPrincipal?.montopesos)
+        obj.informacionPrincipal.montopesos = parsePntMonto(obj.informacionPrincipal.montopesos);
+    else obj.informacionPrincipal.montopesos = 0;
+
+    if(obj.complementoPrincipal?.fechaFinPeriodo)
+        obj.complementoPrincipal.fechaFinPeriodo = parsePntFecha(obj.complementoPrincipal.fechaFinPeriodo);
+
+    if(obj.complementoPrincipal?.fechaInicioPeriodo)
+        obj.complementoPrincipal.fechaInicioPeriodo = parsePntFecha(obj.complementoPrincipal.fechaInicioPeriodo);
+
+    if(extraData) Object.assign(obj, extraData);
+
+    return obj;
 }
 
 function pntContratosTransform(obj) {
-    if(!obj.periodoreporta) return null;
-    obj.date = getPntFechaFromRange(obj['periodoreporta']);
-
     if(obj.montocontrato)
         obj.montocontrato = parsePntMonto(obj.montocontrato);
     else obj.montocontrato = 0;
@@ -130,10 +153,7 @@ function pntContratosTransform(obj) {
     return obj;
 }
 
-function pntServidoresTransform(obj) {
-    if(!obj.periodoreporta) return null;
-    obj.date = getPntFechaFromRange(obj['periodoreporta']);
-
+function pntDefaultTransform(obj) {
     if(obj.informacionPrincipal?.fecharesolucion)
         obj.informacionPrincipal.fecharesolucion = parsePntFecha(obj.informacionPrincipal.fecharesolucion);
 
@@ -147,6 +167,124 @@ function pntServidoresTransform(obj) {
 
     return obj;
 }
+
+function pntEjercicioPresupuestosTransform(obj) {
+    if(obj.montoneto)
+        obj.montoneto = parsePntMonto(obj.montoneto);
+    else obj.montoneto = 0;
+
+    if(obj.informacionPrincipal?.informacionSecundarios && obj.informacionPrincipal.informacionSecundarios.length > 0) {
+        obj.informacionPrincipal.informacionSecundarios.map( x => {
+            if(x.presupuesto) x.presupuesto = parsePntMonto(x.presupuesto); else x.presupuesto = 0;
+            if(x.ampliacion) x.ampliacion = parsePntMonto(x.ampliacion); else x.ampliacion = 0;
+            if(x.modificado) x.modificado = parsePntMonto(x.modificado); else x.modificado = 0;
+            if(x.devengado) x.devengado = parsePntMonto(x.devengado); else x.devengado = 0;
+            if(x.pagado) x.pagado = parsePntMonto(x.pagado); else x.pagado = 0;
+            if(x.subejercicio) x.subejercicio = parsePntMonto(x.subejercicio); else x.subejercicio = 0;
+        } )
+    }
+    
+    if(obj.complementoPrincipal?.fechaFinPeriodo)
+        obj.complementoPrincipal.fechaFinPeriodo = parsePntFecha(obj.complementoPrincipal.fechaFinPeriodo);
+
+    if(obj.complementoPrincipal?.fechaInicioPeriodo)
+        obj.complementoPrincipal.fechaInicioPeriodo = parsePntFecha(obj.complementoPrincipal.fechaInicioPeriodo);
+
+    if(extraData) Object.assign(obj, extraData);
+
+    return obj;
+}
+
+function pntMinimalTransform(obj) {
+    let newObj = {
+        id: obj.id,
+        sujeto: obj.sujetoobligado,
+        date: getPntFechaFromRange(obj.periodoreporta),
+        size: JSON.stringify(obj).length
+    }
+
+    if(extraData) Object.assign(newObj, extraData);
+
+    return newObj;
+}
+
+function pntPresupuestoAnualTransform(obj) {
+    if(obj.presupuestoasignado)
+        obj.presupuestoasignado = parsePntMonto(obj.presupuestoasignado);
+    else obj.presupuestoasignado = 0;
+
+    if(obj.informacionPrincipal?.informacionSecundarios && obj.informacionPrincipal.informacionSecundarios.length > 0) {
+        obj.informacionPrincipal.informacionSecundarios.map( x => {
+            if(x.presupuesto) x.presupuesto = parsePntMonto(x.presupuesto); else x.presupuesto = 0;
+        } )
+    }
+    
+    if(obj.complementoPrincipal?.fechaFinPeriodo)
+        obj.complementoPrincipal.fechaFinPeriodo = parsePntFecha(obj.complementoPrincipal.fechaFinPeriodo);
+
+    if(obj.complementoPrincipal?.fechaInicioPeriodo)
+        obj.complementoPrincipal.fechaInicioPeriodo = parsePntFecha(obj.complementoPrincipal.fechaInicioPeriodo);
+
+    if(extraData) Object.assign(obj, extraData);
+
+    return obj;
+}
+
+function pntResolucionesTransform(obj) {
+    if(obj.fecharesolucion)
+        obj.fecharesolucion = parsePntFecha(obj.fecharesolucion);
+    
+    if(obj.informacionPrincipal?.fecharesolucion)
+        obj.informacionPrincipal.fecharesolucion = parsePntFecha(obj.informacionPrincipal.fecharesolucion);
+    
+    if(obj.informacionPrincipal?.fechanotificacion)
+        obj.informacionPrincipal.fechanotificacion = parsePntFecha(obj.informacionPrincipal.fechanotificacion);
+
+    if(obj.informacionPrincipal?.fechacumplimiento)
+        obj.informacionPrincipal.fechacumplimiento = parsePntFecha(obj.informacionPrincipal.fechacumplimiento);
+
+    if(obj.complementoPrincipal?.fechaFinPeriodo)
+        obj.complementoPrincipal.fechaFinPeriodo = parsePntFecha(obj.complementoPrincipal.fechaFinPeriodo);
+
+    if(obj.complementoPrincipal?.fechaInicioPeriodo)
+        obj.complementoPrincipal.fechaInicioPeriodo = parsePntFecha(obj.complementoPrincipal.fechaInicioPeriodo);
+
+    if(extraData) Object.assign(obj, extraData);
+
+    return obj;
+}
+
+function pntSueldosTransform(obj) {
+    if(obj.montoneto)
+        obj.montoneto = parsePntMonto(obj.montoneto);
+    else obj.montoneto = 0;
+
+    if(obj.informacionPrincipal?.informacionSecundarios && obj.informacionPrincipal.informacionSecundarios.length > 0) {
+        obj.informacionPrincipal.informacionSecundarios.map( x => {
+
+            let key = Object.keys(x)[0];
+            if(x[key] && x[key].length > 0) {
+                x[key].map( y => {
+                    if(y.montobruto) y.montobruto = parsePntMonto(y.montobruto); else y.montobruto = 0;
+                    if(y.montoneto) y.montoneto = parsePntMonto(y.montoneto); else y.montoneto = 0;
+                } );
+            }
+
+        } )
+    }
+    
+    if(obj.complementoPrincipal?.fechaFinPeriodo)
+        obj.complementoPrincipal.fechaFinPeriodo = parsePntFecha(obj.complementoPrincipal.fechaFinPeriodo);
+
+    if(obj.complementoPrincipal?.fechaInicioPeriodo)
+        obj.complementoPrincipal.fechaInicioPeriodo = parsePntFecha(obj.complementoPrincipal.fechaInicioPeriodo);
+
+    if(extraData) Object.assign(obj, extraData);
+
+    return obj;
+}
+
+
 
 function parsePntMonto(str) {
     return parseFloat( str.replace(/\$|,/g, '') );
