@@ -5,17 +5,40 @@ const commandLineArgs = require('command-line-args');
 
 const optionDefinitions = [
     { name: 'transform', alias: 't', type: String },
-    { name: 'data', alias: 'd', type: String }
+    { name: 'data', alias: 'd', type: String },
+    { name: 'fieldDelimiter', alias: 'f', type: String, defaultValue: '|' },
+    { name: 'valueDelimiter', alias: 'v', type: String, defaultValue: ':' },
 ];
 const args = commandLineArgs(optionDefinitions);
+if(args.fieldDelimiter === args.valueDelimiter) {
+    console.error("ERROR: Both delimiters cannot be the same.");
+    process.exit(1);
+}
 
 let extraData = {};
 if(args.data) {
-    let extraFields = args.data.split('|');
+    let extraFields = args.data.split(args.fieldDelimiter);
     extraFields.map( f => {
-        let [key, value] = f.split(':');
-        extraData[key] = value;
+        let [key, value] = f.split(args.valueDelimiter);
+        extraData[key] = parseValueString(value);
     } );
+}
+
+function parseValueString(str) {
+    const trimmed = str.trim();
+    
+    // Check if it's an integer (positive or negative, no decimal point)
+    if (/^-?\d+$/.test(trimmed)) {
+        return parseInt(trimmed, 10);
+    }
+    
+    // Check if it's a float (positive or negative, with decimal point)
+    if (/^-?\d+\.\d+$/.test(trimmed)) {
+        return parseFloat(trimmed);
+    }
+    
+    // Return as string if it doesn't match number patterns
+    return str;
 }
 
 process.stdin.setEncoding('utf8');
