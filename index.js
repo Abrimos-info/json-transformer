@@ -51,6 +51,8 @@ process.stdin
             return guatecomprasTransform(obj);
         case 'pnt':
             return pntTransform(obj);
+        case 'sipot':
+            return sipotTransform(obj);
         default:
             return obj;
     }
@@ -72,6 +74,70 @@ function guatecomprasTransform(obj) {
     }
     return obj;
 }
+
+function sipotTransform(obj) {
+    if(obj.fechaInicio)
+        obj.fechaInicio = parsePntFecha(obj.fechaInicio);
+
+    if(obj.informacion.length > 0) {
+        let infoTemp = obj.informacion;
+        obj.informacion = {};
+        infoTemp.map( item => {
+            if(item.length > 0) {
+                switch(item[0]) {
+                    case 10:
+                        obj.informacion[generateProperKey(item[1])] = parseNestedSipotArray(item[2]);
+                        break;
+                    default:
+                        obj.informacion[generateProperKey(item[1])] = detectMapping(item[2]);
+                        break;
+                }
+            }
+        } );
+    }
+
+    return obj;
+}
+
+function parseNestedSipotArray(arr) {
+    let newArr = [];
+
+    if(arr.length > 0) {
+        arr.map( a => {
+            let tempObj = {}
+            if(a.length > 0) {
+                a.map( prop => {
+                    tempObj[generateProperKey(prop[1])] = detectMapping(prop[2])
+                } )
+            }
+            newArr.push(tempObj);
+        } )
+    }
+
+    return newArr;
+}
+
+function generateProperKey(str) {
+    return normalizeString(str)
+        .replace(/\(.{1,2}\)/g, '')
+        .replace(/[^a-z\sñ]/gi, ' ')
+        .trim()
+        .replace(/\s+/g, '_');
+}
+
+function normalizeString(str) {
+    str = str.toLowerCase();
+    str = str.replace(/ñ/g, 'n');
+    str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return str;
+}
+
+function detectMapping(str) {
+    if(str.match(/^\d{2}\/\d{2}\/\d{4}$/)) return parsePntFecha(str);
+    if(str.match(/^\$[0-9.,]+$/)) return parsePntMonto(str);
+    return str;
+}
+
 
 function pntTransform(obj) {
     if(!obj.periodoreporta && !obj.periodoinforma) return null;
