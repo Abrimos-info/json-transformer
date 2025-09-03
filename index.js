@@ -135,7 +135,7 @@ function normalizeString(str) {
 function detectMapping(str) {
     if(str === "") return null;
     if(str.match(/^\d{2}\/\d{2}\/\d{4}$/)) return parsePntFecha(str);
-    if(str.match(/^\$[0-9.,]+$/)) return parsePntMonto(str);
+    if(str.match(/^\$-?[0-9.,]+$/)) return parsePntMonto(str);
     return str;
 }
 
