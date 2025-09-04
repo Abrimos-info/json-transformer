@@ -89,7 +89,8 @@ function sipotTransform(obj) {
                         obj.informacion[generateProperKey(item[1])] = parseNestedSipotArray(item[2]);
                         break;
                     default:
-                        obj.informacion[generateProperKey(item[1])] = detectMapping(item[2]);
+                        let itemKey = generateProperKey(item[1]);
+                        obj.informacion[itemKey] = detectMapping(item[2], itemKey);
                         break;
                 }
             }
@@ -107,7 +108,8 @@ function parseNestedSipotArray(arr) {
             let tempObj = {}
             if(a.length > 0) {
                 a.map( prop => {
-                    tempObj[generateProperKey(prop[1])] = detectMapping(prop[2])
+                    let itemKey = generateProperKey(prop[1]);
+                    tempObj[itemKey] = detectMapping(prop[2], itemKey)
                 } )
             }
             newArr.push(tempObj);
@@ -132,10 +134,18 @@ function normalizeString(str) {
     return str;
 }
 
-function detectMapping(str) {
+function detectMapping(str, key) {
     if(str === "") return null;
-    if(str.match(/^\d{2}\/\d{2}\/\d{4}$/)) return parsePntFecha(str);
+    if(str.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+        let date = parsePntFecha(str);
+        if(!isISOString(date)) {
+            str = reversePntFecha(str);
+            date = parsePntFecha(str);
+        }
+        return date;
+    }
     if(str.match(/^\$-?[0-9.,]+$/)) return parsePntMonto(str);
+    if(key.match(/fecha/)) return null;
     return str;
 }
 
@@ -386,6 +396,19 @@ function getPntFechaFromRange(str) {
 }
 
 function parsePntFecha(str) {
+    if(!str.match(/^\d{2}\/\d{2}\/\d{4}$/)) return null;
     let parts = str.split('/');
     return parts[2] + '-' + parts[1] + '-' + parts[0] + 'T00:00:00.000-06:00';
 }
+
+function reversePntFecha(str) {
+    let parts = str.split('/');
+    return parts[1] + '/' + parts[0] + '/' + parts[2];
+}
+
+const isISOString = (val) => {
+    // Create a Date object from the input string
+    const d = new Date(val);
+    // Check if the date is valid (not NaN)
+    return !Number.isNaN(d.valueOf());
+};
