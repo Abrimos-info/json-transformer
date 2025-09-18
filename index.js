@@ -2,6 +2,8 @@
 const JSONStream = require('JSONStream');
 const es = require('event-stream');
 const commandLineArgs = require('command-line-args');
+const countries = require('iso-3166-1-alpha-2');
+const { transliterate, slugify } = require('transliteration');
 
 const optionDefinitions = [
     { name: 'transform', alias: 't', type: String },
@@ -43,22 +45,47 @@ function parseValueString(str) {
 
 process.stdin.setEncoding('utf8');
 
-process.stdin
-.pipe(JSONStream.parse())
-.pipe(es.mapSync(function (obj) {
-    switch(args.transform) {
-        case 'guatecompras':
-            return guatecomprasTransform(obj);
-        case 'pnt':
-            return pntTransform(obj);
-        case 'sipot':
-            return sipotTransform(obj);
-        default:
-            return obj;
-    }
-}))
-.pipe(JSONStream.stringify(false))
-.pipe(process.stdout);
+try {
+    process.stdin
+    .pipe(JSONStream.parse())
+    .pipe(es.mapSync(function (obj) {
+        switch(args.transform) {
+            case 'guatecompras':
+                return guatecomprasTransform(obj);
+            case 'pnt':
+                return pntTransform(obj);
+            case 'pnt_minimal':
+                return pntMinimalTransform(obj);
+            case 'sipot':
+                return sipotTransform(obj);
+
+            case 'proact_contracts':
+                return proactContractsTransform(obj);
+            case 'proact_buyers':
+                return proactBuyersTransform(obj);
+            case 'proact_suppliers':
+                return proactSuppliersTransform(obj);
+
+            case 'opentender_contracts':
+                let contracts = openTenderContractsTransform(obj);
+                if(contracts.length > 0) {
+                    contracts.map(c => {
+                        process.stdout.write( JSON.stringify(c) + '\n' );
+                    })
+                }
+                return;
+            case 'opentender_buyers':
+                return openTenderBuyersTransform(obj);
+            case 'opentender_suppliers':
+                return openTenderSuppliersTransform(obj);
+            default:
+                return obj;
+        }
+    }))
+    .pipe(JSONStream.stringify(false))
+    .pipe(process.stdout);
+}
+catch(e) { console.error(e) }
 
 process.stdin.on('end', () => {
   process.stdout.write('\n');
@@ -384,13 +411,12 @@ function pntSueldosTransform(obj) {
     return obj;
 }
 
-
-
 function parsePntMonto(str) {
     return parseFloat( str.replace(/\$|,/g, '') );
 }
 
 function getPntFechaFromRange(str) {
+    if(!str) return null;
     let dates = str.split(' - ');
     return parsePntFecha(dates[0]);
 }
@@ -412,3 +438,230 @@ const isISOString = (val) => {
     // Check if the date is valid (not NaN)
     return !Number.isNaN(d.valueOf());
 };
+
+
+function proactContractsTransform(obj) {
+    // console.log(obj);
+    let newObj = {
+        id: getContractID(obj.tender_country, obj.tender_id),
+        country: obj.tender_country,
+        title: obj.lot_title,
+        publish_date: getContractDate(obj.tender_publications_firstcallfortenderdate),
+        award_date: obj.tender_publications_firstdcontractawarddate ? getContractDate(obj.tender_publications_firstdcontractawarddate) : getContractDate(obj.tender_awarddecisiondate),
+        contract_date: getContractDate(obj.tender_contractsignaturedate),
+        buyer: {
+            id: generateEntityID(obj.buyer_name, obj.buyer_country, obj.tender_country),
+            name: obj.buyer_name
+        },
+        supplier: {
+            id: generateEntityID(obj.bidder_name, obj.bidder_country, obj.tender_country),
+            name: obj.bidder_name
+        },
+        amount: parseFloat(obj.bid_price),
+        currency: obj.bid_pricecurrency,
+        method: obj.tender_proceduretype,
+        category: obj.tender_supplytype,
+        url: obj.notice_url,
+        source: 'proact'
+    }
+
+    if(!newObj.amount) delete newObj.amount;
+    
+    return newObj;
+}
+
+function proactBuyersTransform(obj) {
+    if(obj.buyer_name.length < 2) return;
+    let newObj = {
+        id: generateEntityID(obj.buyer_name, obj.buyer_country, obj.tender_country),
+        name: obj.buyer_name,
+        identifier: obj.buyer_id,
+        country: obj.buyer_country ? obj.buyer_country : obj.tender_country,
+        address: {
+            city: obj.buyer_city,
+            postal_code: obj.buyer_postcode,
+        },
+        classification: obj.buyer_buyertype,
+        source: 'proact'
+    }
+
+    let sane_name = transliterate(obj.buyer_name);
+    if(sane_name != obj.buyer_name)
+        newObj.other_names = [ transliterate(obj.buyer_name) ];
+
+    return newObj;
+}
+
+function proactSuppliersTransform(obj) {
+    if(obj.bidder_name.length < 2) return;    
+    let newObj = {
+        id: generateEntityID(obj.bidder_name, obj.bidder_country, obj.tender_country),
+        name: obj.bidder_name,
+        identifier: obj.bidder_id,
+        country: obj.bidder_country ? obj.bidder_country : obj.tender_country,
+        source: 'proact'
+    }
+
+    let sane_name = transliterate(obj.bidder_name);
+    if(sane_name != obj.bidder_name)
+        newObj.other_names = [ transliterate(obj.bidder_name) ];
+
+    return newObj;
+}
+
+function openTenderContractsTransform(obj) {
+    let contracts = []
+    if(!obj.releases || !obj.releases[0].awards) return contracts;
+
+    obj.releases.map( release => {
+        let country = getOpenTenderCountry(release.buyer);
+        
+        release.awards.map( award => {
+            if(award.suppliers) {
+                let contract = {
+                    id: getContractID(country, release.ocid + '-' + award.id),
+                    country: country,
+                    title: transliterate(release.tender.title),
+                    description: release.tender.description ? transliterate(release.tender.description) : '',
+                    publish_date: getContractDate(release.date),
+                    award_date: getContractDate(award.date),
+                    contract_date: getContractDate(getContractForAward(release.contracts, award.id)),
+                    buyer: {
+                        id: generateEntityID(release.buyer.name, country, 'EU'),
+                        name: release.buyer.name
+                    },
+                    supplier: {},
+                    amount: parseFloat(award.value?.amount),
+                    currency: award.value?.currency,
+                    method: release.tender.procurementMethod,
+                    category: release.tender.mainProcurementCategory,
+                    url: getAwardNotice(award.documents), // Puede ser tenderNotice o awardNotice, usamos el segundo
+                    source: 'opentender'
+                }
+
+                // Add supplier data
+                if(award.suppliers?.length > 0) {
+                    contract.supplier = {
+                        id: generateEntityID(award.suppliers[0].name, country, 'EU'),
+                        name: award.suppliers[0].name
+                    }
+                }
+
+                contracts.push(contract);
+            }
+        } );
+    } );
+
+    return contracts;
+}
+
+function openTenderBuyersTransform(obj) {
+    return openTenderPartyObject(obj, 'buyer');
+}
+
+function openTenderSuppliersTransform(obj) {
+    return openTenderPartyObject(obj, 'supplier');
+}
+
+function openTenderPartyObject(obj, role) {
+    if(!obj.releases || !obj.releases[0].parties?.length > 0) return;
+    
+    let partyObj;
+    obj.releases.map( release => {
+        let country = getOpenTenderCountry(release.buyer);
+        
+        release.parties.map( party => {
+            if(party.roles.indexOf(role) >= 0) {
+                partyObj = {
+                    id: generateEntityID(party.name, country, 'EU'),
+                    name: party.name,
+                    identifier: getTaxId(party.additionalIdentifiers),
+                    country: country,
+                    source: 'opentender'
+                }
+
+                let sane_name = transliterate(party.name);
+                if(sane_name != party.name)
+                    partyObj.other_names = [ sane_name ];
+
+                if(party.additionalIdentifiers)
+                    partyObj.identifier = getTaxId(party.additionalIdentifiers);
+                
+                if(party.address) {
+                    partyObj.address = {
+                        street: party.address.street ? party.address.street : '',
+                        region: party.address.region ? party.address.region : '',
+                        postal_code: party.address.postalCode ? party.address.postalCode : ''
+                    }
+                }
+
+                if(party.contactPoint) {
+                    partyObj.contactPoint = {
+                        name: party.contactPoint.name ? party.contactPoint.name : '',
+                        email: party.contactPoint.email ? party.contactPoint.email : '',
+                        telephone: party.contactPoint.telephone ? party.contactPoint.telephone : '',
+                        url: party.contactPoint.url ? party.contactPoint.url : '',
+                    }
+                }
+            }
+        } );
+    } );
+
+    return partyObj;
+}
+
+function getContractID(country, id_str) {
+    let id = transliterate(id_str);
+    if(!id.match(country + '_')) id = country + '_' + id;
+    return id;
+}
+
+function getOpenTenderCountry(buyer) {
+    if(buyer?.id.match(/^\w{2}_/)) return buyer.id.substring(0, 2);
+    if(buyer?.id.match(/^\w{3}_/)) return 'SK';
+    if(buyer?.id.match(/^hash/)) return buyer.id.substring(12, 14);
+    return '';
+}
+
+function getTaxId(list) {
+    let taxID = '';
+
+    if(list?.length > 0) {
+        list.map( item => {
+            if(item.scheme == 'TAX_ID') taxID = item.id;
+        } )
+    }
+
+    return taxID;
+}
+
+function getContractDate(str) {
+    if(!str) return null;
+    if(str.match(/^\d{4}-\d{2}-\d{2}/)) return new Date(str).toISOString();
+    return null;
+}
+
+function getContractForAward(contracts, awardID) {
+    let date = null;
+    if(contracts?.length > 0) {
+        contracts.map(c => {
+            if(c.awardID == awardID) date = c.dateSigned;
+        })
+    }
+    return date;
+}
+
+function getAwardNotice(documents) {
+    let url = '';
+    if(documents?.length > 0) {
+        documents.map(doc => {
+            if(doc.documentType == 'awardNotice')
+                url = doc.url;
+        })
+    }
+    return url;
+}
+
+function generateEntityID(str, entity_country, contract_country) {
+    return slugify(str + ' ' + (entity_country ? entity_country : contract_country));
+}
