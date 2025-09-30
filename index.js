@@ -1078,5 +1078,6 @@ function getAwardNotice(documents) {
 
 function generateEntityID(str, entity_country, contract_country) {
     str = str.replace(/\./g, ' ').trim();
-    return slugify(str + ' ' + (entity_country ? entity_country : contract_country));
+    str = slugify(str + ' ' + (entity_country ? entity_country : contract_country));
+    return str.replace(/-{2,}/g, '-');
 }
