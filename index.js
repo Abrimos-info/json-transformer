@@ -514,14 +514,15 @@ function openTenderContractsTransform(obj) {
     if(!obj.releases || !obj.releases[0].awards) return contracts;
 
     obj.releases.map( release => {
-        let country = getOpenTenderCountry(release.buyer);
-        
+        let country = '';
+        if(extraData?.country) country = extraData?.country.toUpperCase();
+        else country = getOpenTenderCountry(release, 'buyer');
         release.awards.map( award => {
             if(award.suppliers) {
                 let contract = {
                     id: getContractID(country, release.ocid + '-' + award.id),
                     country: country,
-                    title: transliterate(release.tender.title),
+                    title: release.tender.title ? transliterate(release.tender.title) : '',
                     description: release.tender.description ? transliterate(release.tender.description) : '',
                     publish_date: getContractDate(release.date),
                     award_date: getContractDate(award.date),
@@ -533,14 +534,15 @@ function openTenderContractsTransform(obj) {
                     supplier: {},
                     amount: parseFloat(award.value?.amount),
                     currency: award.value?.currency,
-                    method: release.tender.procurementMethod,
-                    category: release.tender.mainProcurementCategory,
+                    method: release.tender?.procurementMethod,
+                    method_details: release.tender?.procurementMethodDetails,
+                    category: release.tender?.mainProcurementCategory,
                     url: getAwardNotice(award.documents), // Puede ser tenderNotice o awardNotice, usamos el segundo
                     source: 'opentender'
                 }
 
                 // Add supplier data
-                if(award.suppliers?.length > 0) {
+                if(award.suppliers?.length > 0 && award.suppliers[0].name) {
                     contract.supplier = {
                         id: generateEntityID(award.suppliers[0].name, country, 'EU'),
                         name: award.suppliers[0].name
@@ -568,10 +570,12 @@ function openTenderPartyObject(obj, role) {
     
     let partyObj;
     obj.releases.map( release => {
-        let country = getOpenTenderCountry(release.buyer);
-        
+        let country = '';
+        if(role == 'buyer' && extraData?.country) country = extraData?.country.toUpperCase();
+        else country = getOpenTenderCountry(release, role);
+
         release.parties.map( party => {
-            if(party.roles.indexOf(role) >= 0) {
+            if(party.roles.indexOf(role) >= 0 && party.name) {
                 partyObj = {
                     id: generateEntityID(party.name, country, 'EU'),
                     name: party.name,
@@ -588,20 +592,19 @@ function openTenderPartyObject(obj, role) {
                     partyObj.identifier = getTaxId(party.additionalIdentifiers);
                 
                 if(party.address) {
-                    partyObj.address = {
-                        street: party.address.street ? party.address.street : '',
-                        region: party.address.region ? party.address.region : '',
-                        postal_code: party.address.postalCode ? party.address.postalCode : ''
-                    }
+                    partyObj.address = {}
+                    if(party.address.street) partyObj.address.street = party.address.street;
+                    if(party.address.region) partyObj.address.region = party.address.region;
+                    if(party.address.postal_code) partyObj.address.postal_code = party.address.postal_code;
+                    if(party.address.countryName) partyObj.address.country = getOpenTenderCountryCode(party.address.countryName);
                 }
 
                 if(party.contactPoint) {
-                    partyObj.contactPoint = {
-                        name: party.contactPoint.name ? party.contactPoint.name : '',
-                        email: party.contactPoint.email ? party.contactPoint.email : '',
-                        telephone: party.contactPoint.telephone ? party.contactPoint.telephone : '',
-                        url: party.contactPoint.url ? party.contactPoint.url : '',
-                    }
+                    partyObj.contactPoint = {}
+                    if(party.contactPoint.name) partyObj.contactPoint.name = party.contactPoint.name;
+                    if(party.contactPoint.email) partyObj.contactPoint.email = party.contactPoint.email;
+                    if(party.contactPoint.telephone) partyObj.contactPoint.telephone = party.contactPoint.telephone;
+                    if(party.contactPoint.url) partyObj.contactPoint.url = party.contactPoint.url;
                 }
             }
         } );
@@ -616,11 +619,422 @@ function getContractID(country, id_str) {
     return id;
 }
 
-function getOpenTenderCountry(buyer) {
-    if(buyer?.id.match(/^\w{2}_/)) return buyer.id.substring(0, 2);
-    if(buyer?.id.match(/^\w{3}_/)) return 'SK';
-    if(buyer?.id.match(/^hash/)) return buyer.id.substring(12, 14);
-    return '';
+function getOpenTenderCountry(release, role) {
+    let country = '';
+    if(release.parties?.length > 0) {
+        release.parties.map(party => {
+            if(party.roles.indexOf(role) >= 0) {
+                if(party.address?.countryName) {
+                    country = party.address?.countryName;
+                }
+            }
+        })
+    }
+
+    if(!country || country == 'none' || country == '–' || country == '-' || country.match(/\d/)) {
+        let buyer = release.buyer;
+        if(buyer?.id.match(/^\w{2}_/)) country = buyer.id.substring(0, 2);
+        if(buyer?.id.match(/^\w{3}_/)) country = 'SK';
+        if(buyer?.id.match(/^hash/)) country = buyer.id.substring(12, 14);
+    }
+
+    if(country.length != 2) {
+        country = getOpenTenderCountryCode(country);
+    }
+
+    return country;
+}
+
+function getOpenTenderCountryCode(str) {
+    switch(str) {
+        case 'Andorra':
+            return 'AD';
+
+        case 'Ujed.Arap.emir':
+            return 'AE';
+        
+        case 'Afghanistan':
+            return 'AF';
+
+        case 'Antigua and Barbuda':
+            return 'AG';
+        
+        case 'Anguilla':
+            return 'AI';
+        
+        case 'Albania':
+        case 'Albanija':
+            return 'AL';
+        
+        case 'Arménie':
+            return 'AM';
+
+        case 'Angola':
+            return 'AO';
+        
+        case 'Antarctica':
+            return 'AQ';
+
+        case 'Argentina':
+            return 'AR';
+
+        case 'Austria':
+        case 'Ausztria':
+        case 'Austrija':
+        case 'Autriche':
+        case 'Avstrija':
+        case 'Östereich':
+        case 'Öстерреицх':
+            return 'AT';
+        
+        case 'Australia':
+            return 'AU';
+        
+        case 'Bosna i Herceg.':
+        case 'Bosna in Hercegovina':
+        case 'Босниа анд Херзеговина':
+            return 'BA';
+        
+        case 'Belgium':
+        case 'Belgija':
+        case 'Belgique':
+        case 'Белгиqуе/Белгиë':
+            return 'BE';
+        
+        case 'Bulgária':
+        case 'Bulgaria':
+        case 'Bugarska':
+        case 'Булгарија':
+            return 'BG';
+        
+        case 'Belarus':
+            return 'BY';
+        
+        case 'Canada':
+        case 'Kanada':
+            return 'CA';
+
+        case 'Svájc':
+        case 'Švicarska':
+        case 'Suisse':
+        case 'Švica':
+        case 'Switzerland':
+        case 'Сwитзерланд':
+            return 'CH';
+
+        case 'Congo':
+            return 'CG';
+
+        case 'China':
+        case 'Chine':
+        case 'Kína':
+        case 'Kina':
+        case 'Kitajska':
+            return 'CN';
+        
+        case 'Cipar':
+        case 'Ciper':
+        case 'Cyprus':
+            return 'CY';
+
+        case 'Csehország':
+        case 'Češka':
+        case 'Češka republika':
+        case 'Czech Republic':
+        case 'Czechia':
+        case 'Tchèque, République':
+        case 'Ческо':
+            return 'CZ';
+        
+        case 'Allemagne':
+        case 'Allemagne.':
+        case 'Germany':
+        case 'Nemčija':
+        case 'Németország':
+        case 'Njemačka':
+        case 'Деутсцхланд':
+            return 'DE';
+
+        case 'Danska':
+        case 'Denmark':
+        case 'Данмарк':
+            return 'DK';
+        
+        case 'Algeria':
+            return 'DZ';
+
+        case 'Észtország':
+            return 'EE';
+
+        case 'Espagne':
+        case 'Španija':
+        case 'Spanyolország':
+        case 'Španjolska':
+        case 'Spain':
+            return 'ES';
+        
+        case 'Егyпт':
+            return 'EG';
+        
+        case 'Finnország':
+        case 'Finska':
+        case 'Finland':
+            return 'FI';
+
+        case 'Franciaország':
+        case 'Francuska':
+        case 'France':
+        case 'Francija':
+        case 'Франце':
+            return 'FR';
+        
+        case 'Gabon':
+            return 'GA';
+        
+        case 'Guyane Française':
+            return 'GF';
+        
+        case 'Guadeloupe':
+            return 'GP';
+
+        case 'Grčka':
+        case 'Greece':
+        case 'Grčija':
+        case 'Грееце':
+            return 'GR';
+        
+        case 'Hongkong':
+        case 'Hong Kong':
+            return 'HK';
+
+        case 'Croatia':
+        case 'Horvátország':
+        case 'Hrvatska':
+        case 'Hrvaška':
+        case 'Хрватска':
+            return 'HR';
+        
+        case 'Budapest':
+        case 'Franciaország ; Magyarország':
+        case 'HUN':
+        case 'Hungary':
+        case 'Liechtenstein, Magyarország':
+        case 'Mađarska':
+        case 'Madžarska':
+        case 'magyar':
+        case 'Magyar':
+        case 'Magyaro.':
+        case 'magyarország':
+        case 'Magyarország':
+        case 'Magyarorzság':
+        case 'Magyarrország':
+        case 'Magyyarország':
+        case 'MAGYARORSZÁG':
+        case 'Magyarország ; Magyarország':
+        case 'Nyíregyháza':
+        case 'Магyарорсзáг':
+            return 'HU';
+        
+        case 'Irska':
+        case 'Irlande':
+        case 'Ireland':
+            return 'IE';
+        
+        case 'Israel':
+        case 'Israël':
+        case 'Israël.':
+        case 'Izrael':
+            return 'IL';
+        
+        case 'Isle of Man':
+            return 'IM';
+
+        case 'India':
+        case 'Indija':
+            return 'IN';
+        
+        case 'British Indian Ocean Territory':
+            return 'IO';
+
+        case 'Italija':
+        case 'Italie':
+        case 'Italy':
+        case 'Olaszország':
+        case 'Италиа':
+            return 'IT';
+        
+        case 'Japan':
+        case 'Japonska':
+        case 'Јапан':
+            return 'JP';
+
+        case 'Korea (South)':
+        case 'Koreja, republika':
+            return 'KR';
+        
+        case 'Kazakhstan':
+            return 'KZ';
+        
+        case 'Liechtenstein':
+            return 'LI';
+
+        case 'Litvánia':
+        case 'Lithuania':
+        case 'Litva':
+            return 'LT';
+        
+        case 'Luksemburg':
+        case 'Luxembourg':
+            return 'LU';
+        
+        case 'Latvia':
+            return 'LV';
+        
+        case 'Moldova':
+            return 'MD';
+        
+        case 'Crna Gora':
+        case 'Монтенегро':
+            return 'ME';
+        
+        case 'Мацедониа (тхе формер Yугослав Републиц оф)':
+            return 'MK';
+        
+        case 'Martinique':
+            return 'MQ';
+
+        case 'Malta':
+            return 'MT';
+        
+        case 'Maurice':
+            return 'MU';
+        
+        case 'Malezija':
+            return 'MY';
+
+        case 'Hollandia':
+        case 'Nizozemska':
+        case 'Netherlands':
+        case 'Pays Bas':
+            return 'NL';
+        
+        case 'Norveška':
+        case 'Norway':
+        case 'Норwаy':
+            return 'NO';
+
+        case 'Lengyelország':
+        case 'Poland':
+        case 'Poljska':
+        case 'Polska':
+        case 'Pologne':
+        case 'Полска':
+            return 'PL';
+        
+        case 'Portugal':
+            return 'PT';
+        
+        case 'Réunion':
+            return 'RE';
+
+        case 'Románia':
+        case 'Romania':
+        case 'Romunija':
+        case 'Rumunjska':
+            return 'RO';
+
+        case 'Serbia':
+        case 'Srbija':
+        case 'Szerbia':
+        case 'Србија':
+            return 'RS';
+        
+        case 'Ruska federaci.':
+        case 'Russian Federation':
+        case 'Oroszország':
+        case 'Руссиан Федератион':
+            return 'RU';
+        
+        case 'Suède':
+        case 'Svédország':
+        case 'Švedska':
+        case 'Sweden':
+        case 'Свериге':
+            return 'SE';
+        
+        case 'Singapour':
+        case 'Singapur':
+            return 'SG';
+
+        case 'Slovenia':
+        case 'Slovenija':
+        case 'Szlovénia':
+        case 'Словенско':
+        case 'Словенија':
+            return 'SI';
+        
+        case 'Slovačka':
+        case 'Slovakia':
+        case 'Slovaška':
+        case 'Szlovákia':
+            return 'SK';
+        
+        case 'Swaziland':
+            return 'SZ';
+        
+        case 'Togo':
+            return 'TG';
+        
+        case 'Turska':
+        case 'Turkey':
+        case 'Türkiye':
+        case 'Turčija':
+        case 'Туркеy':
+            return 'TR';
+
+        case 'Taiwan':
+            return 'TW';
+
+        case 'Ukraine':
+        case 'Ukrajina':
+            return 'UA';
+
+        case 'Egyesült Királyság':
+        case 'Royaume Uni':
+        case 'Velika Britania':
+        case 'Velika Britanija':
+        case 'United Kingdom':
+        case 'Združeno kraljestvo':
+        case 'Унитед Кингдом оф Греат Бритаин анд Нортхерн Иреланд':
+            return 'UK';
+        
+        case 'United States Minor Outlying Islands':
+            return 'UM';
+        
+        case 'Amerikai Egyesült Államok':
+        case 'États Unis':
+        case 'USA':
+        case 'United States':
+        case 'Združene države Amerike':
+        case 'Унитед Статес оф Америца':
+            return 'US';
+        
+        case 'Amer.Djev.Otoci':
+            return 'VI';
+        
+        case 'Brit.Djev.Otoci':
+        case 'Britanski Djevičanski otoci':
+            return 'VG';
+        
+        case 'Mayotte':
+            return 'YT';
+
+        case 'South Africa':
+            return 'ZA';
+        
+        default:
+            return str;
+    }
 }
 
 function getTaxId(list) {
@@ -663,5 +1077,6 @@ function getAwardNotice(documents) {
 }
 
 function generateEntityID(str, entity_country, contract_country) {
+    str = str.replace(/\./g, ' ').trim();
     return slugify(str + ' ' + (entity_country ? entity_country : contract_country));
 }
