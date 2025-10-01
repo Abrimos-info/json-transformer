@@ -162,7 +162,7 @@ function guatecomprasProveedoresTransform(obj) {
     Object.keys(obj).map( k => {
         switch(k) {
             case 'gcid':
-                // newObj['gcid'] = obj[k].toString();
+                newObj.url = 'https://www.guatecompras.gt/proveedores/consultaDetProvee.aspx?rqp=9&lprv=' + obj[k].toString();
                 break;
             case 'Fecha SAT':
                 newObj.updated_date = parseFechaSat(obj[k]);
