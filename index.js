@@ -52,6 +52,9 @@ try {
         switch(args.transform) {
             case 'guatecompras':
                 return guatecomprasTransform(obj);
+            case 'guatecompras_proveedores':
+                return guatecomprasProveedoresTransform(obj);
+            
             case 'pnt':
                 return pntTransform(obj);
             case 'pnt_minimal':
@@ -78,6 +81,7 @@ try {
                 return openTenderBuyersTransform(obj);
             case 'opentender_suppliers':
                 return openTenderSuppliersTransform(obj);
+            
             default:
                 return obj;
         }
@@ -100,6 +104,192 @@ function guatecomprasTransform(obj) {
 	} );
     }
     return obj;
+}
+
+function parseRazonSocial(str) {
+    if(str.match(/.*,.*,.*,.*,.*/)) {
+        let [ apellido1, apellido2, apellido3, nombre1, nombre2 ] = str.split(',');
+        return nombre1 + (nombre2? ' ' + nombre2 : '') + ' ' + apellido1 + (apellido2? ' ' + apellido2 : '') + (apellido3? ' ' + apellido3 : '')
+    }
+    return str;
+}
+
+function parseFecha(str) {
+    if(str == '[--NO ESPECIFICADO--]') return null;
+    let [ day, month, year ] = str.split('/');
+    return new Date( year + '-' + month + '-' + day );
+}
+
+function parseFechaSat(str) {
+    // 14.feb..2020 07:17:24
+    let [ date, time ] = str.split(' ');
+    let [ day, month, year ] = date.split(/\.{1,2}/);
+    return new Date( year + '-' + getMonthNum(month) + '-' + day + 'T' + time + '-06:00' );
+}
+
+function getMonthNum(str) {
+    switch(str) {
+        case 'ene': return '01';
+        case 'feb': return '02';
+        case 'mar': return '03';
+        case 'abr': return '04';
+        case 'may': return '05';
+        case 'jun': return '06';
+        case 'jul': return '07';
+        case 'ago': return '08';
+        case 'sep': return '09';
+        case 'oct': return '10';
+        case 'nov': return '11';
+        case 'dic': return '12';
+        default:
+            console.log('invalid month', str);
+            process.exit(1);
+    }
+}
+
+function guatecomprasProveedoresTransform(obj) {
+    let newObj = {
+        id: '',
+        name: '',
+        identifier: '',
+        country: 'GT',
+        address: {
+            country: 'GT'
+        },
+        source: 'guatecompras_proveedores'
+    }
+
+    Object.keys(obj).map( k => {
+        switch(k) {
+            case 'gcid':
+                // newObj['gcid'] = obj[k].toString();
+                break;
+            case 'Fecha SAT':
+                newObj.updated_date = parseFechaSat(obj[k]);
+                break;
+            case 'Nombre o razón social':
+                newObj.name = parseRazonSocial(obj[k]);
+                newObj.id = generateEntityID(newObj.name, 'GT', 'GT');
+                break;
+            case 'Tipo de organización':
+                newObj.classification = obj[k];
+                break;
+            case 'Número de Identificación Tributaria (NIT)':
+                newObj.identifier = obj[k].toString();
+                break;
+            case 'Nombre comercial 1':
+            case 'Nombre comercial 2':
+            case 'Nombre comercial 3':
+            case 'Nombre comercial 4':
+            case 'Nombre comercial 5':
+            case 'Nombre comercial 5':
+                if(!newObj.hasOwnProperty('other_names')) newObj['other_names'] = [];
+                newObj['other_names'].push(obj[k]);
+                break;
+            case 'Existen otros nombres comerciales':
+                newObj['other_names'].push(...obj[k]);
+                break;
+            case 'Estado del proveedor (Obtenido desde RGAE)':
+                newObj.status = obj[k];
+                break;
+            case 'Adjudicado o No adjudicado':
+                newObj.has_awards = (obj[k] == 'ADJUDICADO')? true : false;
+                break;
+            case 'Participa o no en Contrato Abierto':
+                newObj.has_contracts = (obj[k] == 'NO PARTICIPA (no tiene productos en el catálogo)')? false : true;
+                break;
+            case 'Con o Sin contraseña':
+                newObj.has_password = (obj[k] == 'CON CONTRASEÑA')? true : false;
+                break;
+            case 'CUI':
+                newObj.additional_identifier = obj[k].toString();
+                break;
+            case 'Número de escritura de constitución':
+                newObj.creation_document_number = obj[k];
+                break;
+            case 'Fecha de constitución':
+                newObj.creation_date = parseFecha(obj[k]);
+                break;
+            case 'Inscripción PROVISIONAL en el Registro Mercantil':
+                newObj.temporary_registration_date = parseFecha(obj[k]);
+                break;
+            case 'Inscripción DEFINITIVA en el Registro Mercantil':
+                newObj.official_registration_date = parseFecha(obj[k]);
+                break;
+            case 'Inscripción en la SAT':
+                newObj.tax_registration_date = parseFecha(obj[k]);
+                break;
+            case 'Actividad Económica':
+                newObj.main_activity = obj[k];
+                break;
+
+            case 'Notario':
+                if(typeof obj[k] !== "string") {
+                    newObj.notary = {}
+                    
+                    if(obj[k].hasOwnProperty('Nombre')) {
+                        let notary_name = parseRazonSocial(obj[k]['Nombre']);
+                        newObj.notary.id = generateEntityID(notary_name, 'GT', 'GT');
+                        newObj.notary.name = notary_name;
+                    }
+                    if(obj[k].hasOwnProperty('NIT')) newObj.notary.identifier = obj[k]['NIT'].toString();
+                }
+                break;
+
+            case 'Estatus del NIT en SAT':
+                newObj.tax_status = obj[k];
+                break;
+            case 'Motivo del Estatus':
+                newObj.tax_status_reason = obj[k];
+                break;
+            case 'Departamento':
+                if(!newObj.address) newObj.address = {}
+                newObj.address.region = obj[k];
+                break;
+            case 'Municipio':
+                if(!newObj.address) newObj.address = {}
+                newObj.address.locality = obj[k];
+                break;
+            case 'Dirección':
+                if(!newObj.address) newObj.address = {}
+                newObj.address.street = obj[k];
+                break;
+            case 'Teléfonos':
+                if(!newObj.contactPoint) newObj.contactPoint = {}
+                newObj.contactPoint.telephone = obj[k];
+                break;
+            case 'Números de fax':
+                if(!newObj.contactPoint) newObj.contactPoint = {}
+                if(!newObj.contactPoint.telephone) newObj.contactPoint.telephone = '';
+                newObj.contactPoint.telephone += ' ' + obj[k];
+                newObj.contactPoint.telephone.trim();
+                break;
+
+            case 'Representantes Legales':
+                if(obj[k].length > 0) {
+                    newObj.representatives = [];
+                    obj[k].map( r => {
+                        let rl = {}
+                        // if(r.hasOwnProperty('gcid')) rl['gcid'] = r['gcid'].toString();
+                        if(r.hasOwnProperty('NIT')) rl.identifier = r['NIT'].toString();
+                        if(r.hasOwnProperty('Nombre')) {
+                            rl.name = parseRazonSocial(r['Nombre']);
+                            rl.id = generateEntityID(rl.name, 'GT', 'GT');
+                        }
+                        if(r.hasOwnProperty('Plazo de Nombramiento')) rl.representation_date = parseFecha(r['Plazo de Nombramiento']);
+                        if(r.hasOwnProperty('Otras Representaciones')) rl.has_other_representations = r['Otras Representaciones'];
+                        newObj.representatives.push(rl);
+                    } )
+                }
+                break;
+        }
+    } );
+
+    if(newObj.hasOwnProperty('other_names')) {
+        let unique_names = new Set([...newObj['other_names']]);
+        newObj['other_names'] = [...unique_names];
+    }
+    return newObj;
 }
 
 function sipotTransform(obj) {
