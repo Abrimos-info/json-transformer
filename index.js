@@ -54,6 +54,16 @@ try {
                 return guatecomprasTransform(obj);
             case 'guatecompras_proveedores':
                 return guatecomprasProveedoresTransform(obj);
+            case 'guatecompras_historico_contracts':
+                return guatecomprasHistoricoContractsTransform(obj);
+            case 'guatecompras_historico_buyers':
+                let buyers = guatecomprasHistoricoBuyersTransform(obj);
+                if(buyers.length > 0) {
+                    buyers.map(b => {
+                        process.stdout.write( JSON.stringify(b) + '\n' );
+                    })
+                }
+                return;
             
             case 'pnt':
                 return pntTransform(obj);
@@ -290,6 +300,75 @@ function guatecomprasProveedoresTransform(obj) {
         newObj['other_names'] = [...unique_names];
     }
     return newObj;
+}
+
+function guatecomprasHistoricoContractsTransform(obj) {
+    let country = 'GT';
+    let contract = {
+        id: getContractID(country, obj.nog_concurso),
+        country: country,
+        title: obj.descripcion,
+        description: '',
+        publish_date: obj.fecha_publicacion,
+        award_date: obj.fecha_adjudicacion,
+        buyer: {
+            id: generateEntityID(obj.entidad_compradora, country, 'GT'),
+            name: obj.entidad_compradora
+        },
+        procuring_entity: {
+            id: generateEntityID(obj.unidad_compradora, country, 'GT'),
+            name: obj.unidad_compradora
+        },
+        method: obj.modalidad,
+        method_details: obj.submodalidad,
+        categories: obj.categorias,
+        status: obj.estatus_concurso,
+        url: 'https://www.guatecompras.gt/concursos/consultaConcurso.aspx?o=4&nog=' + obj.nog_concurso,
+        source: 'guatecompras_historico'
+    }
+
+    if(obj.nit && obj.nombre) {
+        contract.supplier = {
+            id: generateEntityID(obj.nombre, country, 'GT'),
+            name: ''
+        }
+    }
+
+    if(obj.monto) {
+        contract.amount = parseFloat(obj.monto);
+        contract.currency = 'GTQ';
+    }
+
+    return contract;
+}
+
+function guatecomprasHistoricoBuyersTransform(obj) {
+    let country = 'GT';
+    let entities = [];
+    if(obj.entidad_compradora) {
+        entities.push( {
+            id: generateEntityID(obj.entidad_compradora, country, 'GT'),
+            name: obj.entidad_compradora,
+            classification: 'government_institution',
+            country: country,
+            source: 'guatecompras_historico'
+        } );
+    }
+    if(obj.unidad_compradora) {
+        entities.push( {
+            id: generateEntityID(obj.unidad_compradora, country, 'GT'),
+            name: obj.unidad_compradora,
+            classification: 'buyer_unit',
+            member_of: {
+                id: generateEntityID(obj.entidad_compradora, country, 'GT'),
+                name: obj.entidad_compradora,
+            },
+            country: country,
+            source: 'guatecompras_historico'
+        } );
+    }
+
+    return entities;
 }
 
 function sipotTransform(obj) {
@@ -726,7 +805,7 @@ function openTenderContractsTransform(obj) {
                     currency: award.value?.currency,
                     method: release.tender?.procurementMethod,
                     method_details: release.tender?.procurementMethodDetails,
-                    category: release.tender?.mainProcurementCategory,
+                    category: [ release.tender?.mainProcurementCategory ],
                     url: getAwardNotice(award.documents), // Puede ser tenderNotice o awardNotice, usamos el segundo
                     source: 'opentender'
                 }
