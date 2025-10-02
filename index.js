@@ -64,6 +64,30 @@ try {
                     })
                 }
                 return;
+            case 'guatecompras_ocds_contracts':
+                let gc_ocds_contracts = guatecomprasOCDSContractsTransform(obj);
+                if(gc_ocds_contracts.length > 0) {
+                    gc_ocds_contracts.map(c => {
+                        process.stdout.write( JSON.stringify(c) + '\n' );
+                    })
+                }
+                return;
+            case 'guatecompras_ocds_buyers':
+                let ocds_buyers = guatecomprasOCDSBuyersTransform(obj);
+                if(ocds_buyers.length > 0) {
+                    ocds_buyers.map(b => {
+                        process.stdout.write( JSON.stringify(b) + '\n' );
+                    })
+                }
+                return;
+            case 'guatecompras_ocds_suppliers':
+                let ocds_suppliers = guatecomprasOCDSSuppliersTransform(obj);
+                if(ocds_suppliers.length > 0) {
+                    ocds_suppliers.map(s => {
+                        process.stdout.write( JSON.stringify(s) + '\n' );
+                    })
+                }
+                return;
             
             case 'pnt':
                 return pntTransform(obj);
@@ -270,9 +294,7 @@ function guatecomprasProveedoresTransform(obj) {
                 break;
             case 'Números de fax':
                 if(!newObj.contactPoint) newObj.contactPoint = {}
-                if(!newObj.contactPoint.telephone) newObj.contactPoint.telephone = '';
-                newObj.contactPoint.telephone += ' ' + obj[k];
-                newObj.contactPoint.telephone.trim();
+                newObj.contactPoint.faxNumber = obj[k];
                 break;
 
             case 'Representantes Legales':
@@ -302,6 +324,7 @@ function guatecomprasProveedoresTransform(obj) {
     return newObj;
 }
 
+
 function guatecomprasHistoricoContractsTransform(obj) {
     let country = 'GT';
     let contract = {
@@ -330,7 +353,7 @@ function guatecomprasHistoricoContractsTransform(obj) {
     if(obj.nit && obj.nombre) {
         contract.supplier = {
             id: generateEntityID(obj.nombre, country, 'GT'),
-            name: ''
+            name: obj.nombre
         }
     }
 
@@ -370,6 +393,220 @@ function guatecomprasHistoricoBuyersTransform(obj) {
 
     return entities;
 }
+
+function guatecomprasOCDSContractsTransform(obj) {
+    let flatContracts = [];
+    let release = obj;
+    let country = 'GT';
+    
+    if(obj.hasOwnProperty('compiledRelease'))
+        release = obj.compiledRelease;
+
+    if(release?.tender?.status == "complete") {
+        if(release.awards && release.awards.length > 0) {
+            release.awards.map( award => {
+                if(award.status == "active") {
+                    let flat = {
+                        id: getContractID(country, release.ocid),
+                        country: country,
+                        title: release.tender.title,
+                        description: getTenderDescriptionFromItems(release.tender),
+                        publish_date: release.tender.datePublished,
+                        award_date: award.date,
+                        contract_date: '',
+                        amount: parseFloat(award.value?.amount),
+                        currency: award.value?.currency,
+                        method: release.tender.procurementMethod,
+                        method_details: release.tender.procurementMethodDetails,
+                        categories: release.tender.mainProcurementCategory,
+                        status: release.tender.statusDetails,
+                        url: 'https://www.guatecompras.gt/concursos/consultaConcurso.aspx?o=4&nog=' + release.ocid.replace('ocds-xqjsxa-', ''),
+                        source: 'guatecompras_ocds'
+                    }
+                    
+                    let buyer = getGuatecomprasOCDSBuyer(release.parties);
+                    if(buyer) {
+                        flat.buyer = {
+                            id: generateEntityID(buyer.name, country, 'GT'),
+                            name: buyer.name
+                        }
+                    }
+                    
+                    let uc = getGuatecomprasOCDSBuyer(release.parties, true);
+                    if(uc) {
+                        flat.procuring_entity = {
+                            id: generateEntityID(uc.name, country, 'GT'),
+                            name: uc.name
+                        }
+                    }
+
+                    let suppliers = [];
+                    if(release.parties.supplier?.length > 0) {
+                        release.parties.supplier.map( s => {
+                            award.suppliers.map( a => {
+                                if(a.id == s.id) suppliers.push(s);
+                            } )
+                        } )
+                    }
+                    else
+                        suppliers = award.suppliers;
+                    
+                    if(suppliers.length > 0) {
+                        flat.supplier = {
+                            id: generateEntityID(parseRazonSocial(suppliers[0].name), country, 'GT'),
+                            name: parseRazonSocial(suppliers[0].name)
+                        }
+                    }
+                    
+                    let contract = findContract(release, award);
+                    if(contract) {
+                        if(contract.dateSigned) flat.contract_date = contract.dateSigned;
+                        else if(contract.period?.startDate) flat.contract_date = contract.period.startDate;
+                    }
+
+                    flatContracts.push(flat);
+                }
+            } );
+        }
+    }
+
+    return flatContracts;
+}
+
+function findContract(release, award) {
+    let contract = null;
+    if(release.hasOwnProperty('contracts') && release.contracts.length > 0) {
+        release.contracts.map( c => {
+            if(c.awardID == award.id) contract = c;
+        } );
+    }
+    return contract;
+}
+
+function getTenderDescriptionFromItems(tender) {
+    let item_descriptions = [];
+
+    if(tender.items && tender.items.length > 0) {
+        tender.items.map( item => {
+            if(item.description) item_descriptions.push(item.description);
+        } )
+    }
+
+    return item_descriptions.join(' ');
+}
+
+function getGuatecomprasOCDSBuyer(parties, uc=false) {
+    let buyer = null;
+
+    if(parties.length > 0) {
+        parties.map( party => {
+            if(party.roles.indexOf('buyer') > -1) {
+                if(uc && party.memberOf) buyer = party;
+                else if(!uc && !party.memberOf) buyer = party;
+            }
+        } )
+    }
+
+    return buyer;
+}
+
+function guatecomprasOCDSBuyersTransform(obj) {
+    let release = obj;
+    let country = 'GT';
+    let entities = [];
+    
+    if(obj.hasOwnProperty('compiledRelease'))
+        release = obj.compiledRelease;
+
+    if(release.parties) {
+        let buyer = getGuatecomprasOCDSBuyer(release.parties);
+        if(buyer) {
+            entities.push( {
+                id: generateEntityID(buyer.name, country, 'GT'),
+                name: buyer.name,
+                classification: 'government_institution',
+                type: buyer.details?.level?.description,
+                identifier: buyer.identifier?.id,
+                address: {
+                    street: buyer.address?.streetAddress,
+                    locality: buyer.address?.locality,
+                    region: buyer.address?.region,
+                    country: country
+                },
+                contactPoint: buyer.contactPoint,
+                country: country,
+                source: 'guatecompras_ocds'
+            } );
+        }
+
+        let uc = getGuatecomprasOCDSBuyer(release.parties, true);
+        if(uc) {
+            entities.push( {
+                id: generateEntityID(uc.name, country, 'GT'),
+                name: uc.name,
+                classification: 'buyer_unit',
+                identifier: uc.identifier?.id,
+                member_of: {
+                    id: generateEntityID(uc.memberOf[0].name, country, 'GT'),
+                    name: uc.memberOf[0].name,
+                },
+                address: {
+                    street: uc.address?.streetAddress,
+                    locality: uc.address?.locality,
+                    region: uc.address?.region,
+                    country: country
+                },
+                contactPoint: uc.contactPoint,
+                country: country,
+                source: 'guatecompras_ocds'
+            } );
+        }
+    }
+   
+    return entities;
+}
+
+function guatecomprasOCDSSuppliersTransform(obj) {
+    let release = obj;
+    let country = 'GT';
+    let entities = [];
+    
+    if(obj.hasOwnProperty('compiledRelease'))
+        release = obj.compiledRelease;
+
+    if(release.parties) {
+        release.parties.map( party => {
+            if(party.roles.indexOf('supplier') >= 0) {
+                let fixedName = parseRazonSocial(party.name);
+                entities.push({
+                    id: generateEntityID(fixedName, 'GT', 'GT'),
+                    name: fixedName,
+                    identifier: getOCDSSupplierID(party),
+                    classification: party.details?.legalEntityTypeDetail?.description,
+                    country: country,
+                    address: {
+                        street: party.address?.streetAddress,
+                        locality: party.address?.locality,
+                        region: party.address?.region,
+                        country: country
+                    },
+                    contactPoint: party.contactPoint,
+                    source: 'guatecompras_ocds'
+                })
+            }
+        } );
+    }
+
+    return entities;
+}
+
+function getOCDSSupplierID(party) {
+    if(party?.identifier?.id) return party.identifier.id;
+    let str = party.id;
+    let parts = str.split('-');
+    return parts[parts.length - 1];
+}
+
 
 function sipotTransform(obj) {
     if(obj.fechaInicio)
@@ -777,6 +1014,7 @@ function proactSuppliersTransform(obj) {
 
     return newObj;
 }
+
 
 function openTenderContractsTransform(obj) {
     let contracts = []
