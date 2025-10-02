@@ -26,23 +26,6 @@ if(args.data) {
     } );
 }
 
-function parseValueString(str) {
-    const trimmed = str.trim();
-    
-    // Check if it's an integer (positive or negative, no decimal point)
-    if (/^-?\d+$/.test(trimmed)) {
-        return parseInt(trimmed, 10);
-    }
-    
-    // Check if it's a float (positive or negative, with decimal point)
-    if (/^-?\d+\.\d+$/.test(trimmed)) {
-        return parseFloat(trimmed);
-    }
-    
-    // Return as string if it doesn't match number patterns
-    return str;
-}
-
 process.stdin.setEncoding('utf8');
 
 try {
@@ -180,6 +163,12 @@ function getMonthNum(str) {
             process.exit(1);
     }
 }
+
+
+
+/* * * * * * * * * * * * * * * * * * * */
+/* Guatecompras Histórico/Proveedores  */
+/* * * * * * * * * * * * * * * * * * * */
 
 function guatecomprasProveedoresTransform(obj) {
     let newObj = {
@@ -324,7 +313,6 @@ function guatecomprasProveedoresTransform(obj) {
     return newObj;
 }
 
-
 function guatecomprasHistoricoContractsTransform(obj) {
     let country = 'GT';
     let contract = {
@@ -339,7 +327,7 @@ function guatecomprasHistoricoContractsTransform(obj) {
             name: obj.entidad_compradora
         },
         procuring_entity: {
-            id: generateEntityID(obj.unidad_compradora, country, 'GT'),
+            id: generateEntityID(obj.unidad_compradora + ' UC', country, 'GT'),
             name: obj.unidad_compradora
         },
         method: obj.modalidad,
@@ -379,7 +367,7 @@ function guatecomprasHistoricoBuyersTransform(obj) {
     }
     if(obj.unidad_compradora) {
         entities.push( {
-            id: generateEntityID(obj.unidad_compradora, country, 'GT'),
+            id: generateEntityID(obj.unidad_compradora + ' UC', country, 'GT'),
             name: obj.unidad_compradora,
             classification: 'buyer_unit',
             member_of: {
@@ -393,6 +381,12 @@ function guatecomprasHistoricoBuyersTransform(obj) {
 
     return entities;
 }
+
+
+
+/* * * * * * * * * * * */
+/*  Guatecompras OCDS  */
+/* * * * * * * * * * * */
 
 function guatecomprasOCDSContractsTransform(obj) {
     let flatContracts = [];
@@ -435,7 +429,7 @@ function guatecomprasOCDSContractsTransform(obj) {
                     let uc = getGuatecomprasOCDSBuyer(release.parties, true);
                     if(uc) {
                         flat.procuring_entity = {
-                            id: generateEntityID(uc.name, country, 'GT'),
+                            id: generateEntityID(uc.name + ' UC', country, 'GT'),
                             name: uc.name
                         }
                     }
@@ -542,7 +536,7 @@ function guatecomprasOCDSBuyersTransform(obj) {
         let uc = getGuatecomprasOCDSBuyer(release.parties, true);
         if(uc) {
             entities.push( {
-                id: generateEntityID(uc.name, country, 'GT'),
+                id: generateEntityID(uc.name + ' UC', country, 'GT'),
                 name: uc.name,
                 classification: 'buyer_unit',
                 identifier: uc.identifier?.id,
@@ -607,6 +601,11 @@ function getOCDSSupplierID(party) {
     return parts[parts.length - 1];
 }
 
+
+
+/* * * * * */
+/*  SIPOT  */
+/* * * * * */
 
 function sipotTransform(obj) {
     if(obj.fechaInicio)
@@ -682,6 +681,11 @@ function detectMapping(str, key) {
     return str;
 }
 
+
+
+/* * * * * * * * * */
+/*  PNT Temáticos  */
+/* * * * * * * * * */
 
 function pntTransform(obj) {
     if(!obj.periodoreporta && !obj.periodoinforma) return null;
@@ -938,13 +942,11 @@ function reversePntFecha(str) {
     return parts[1] + '/' + parts[0] + '/' + parts[2];
 }
 
-const isISOString = (val) => {
-    // Create a Date object from the input string
-    const d = new Date(val);
-    // Check if the date is valid (not NaN)
-    return !Number.isNaN(d.valueOf());
-};
 
+
+/* * * * * * */
+/*  ProACT   */
+/* * * * * * */
 
 function proactContractsTransform(obj) {
     // console.log(obj);
@@ -1016,14 +1018,20 @@ function proactSuppliersTransform(obj) {
 }
 
 
+
+/* * * * * * * * */
+/*  OpenTender   */
+/* * * * * * * * */
+
 function openTenderContractsTransform(obj) {
     let contracts = []
     if(!obj.releases || !obj.releases[0].awards) return contracts;
 
     obj.releases.map( release => {
         let country = '';
-        if(extraData?.country) country = extraData?.country.toUpperCase();
+        if(extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
         else country = getOpenTenderCountry(release, 'buyer');
+        
         release.awards.map( award => {
             if(award.suppliers) {
                 let contract = {
@@ -1078,7 +1086,7 @@ function openTenderPartyObject(obj, role) {
     let partyObj;
     obj.releases.map( release => {
         let country = '';
-        if(role == 'buyer' && extraData?.country) country = extraData?.country.toUpperCase();
+        if(role == 'buyer' && extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
         else country = getOpenTenderCountry(release, role);
 
         release.parties.map( party => {
@@ -1583,8 +1591,33 @@ function getAwardNotice(documents) {
     return url;
 }
 
+
+function parseValueString(str) {
+    const trimmed = str.trim();
+    
+    // Check if it's an integer (positive or negative, no decimal point)
+    if (/^-?\d+$/.test(trimmed)) {
+        return parseInt(trimmed, 10);
+    }
+    
+    // Check if it's a float (positive or negative, with decimal point)
+    if (/^-?\d+\.\d+$/.test(trimmed)) {
+        return parseFloat(trimmed);
+    }
+    
+    // Return as string if it doesn't match number patterns
+    return str;
+}
+
 function generateEntityID(str, entity_country, contract_country) {
     str = str.replace(/\./g, ' ').trim();
     str = slugify(str + ' ' + (entity_country ? entity_country : contract_country));
     return str.replace(/-{2,}/g, '-');
 }
+
+const isISOString = (val) => {
+    // Create a Date object from the input string
+    const d = new Date(val);
+    // Check if the date is valid (not NaN)
+    return !Number.isNaN(d.valueOf());
+};
