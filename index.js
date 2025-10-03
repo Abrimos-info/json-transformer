@@ -340,8 +340,8 @@ function guatecomprasHistoricoContractsTransform(obj) {
 
     if(obj.nit && obj.nombre) {
         contract.supplier = {
-            id: generateEntityID(obj.nombre, country, 'GT'),
-            name: obj.nombre
+            id: generateEntityID(parseRazonSocial(obj.nombre), country, 'GT'),
+            name: parseRazonSocial(obj.nombre)
         }
     }
 
