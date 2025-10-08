@@ -1058,11 +1058,17 @@ function openTenderContractsTransform(obj) {
 
                 // Add supplier data
                 if(award.suppliers?.length > 0 && award.suppliers[0].name) {
+                    let supplier_country = getOpenTenderCountry(release.parties, 'supplier', award.suppliers[0].name);
                     contract.supplier = {
-                        id: generateEntityID(award.suppliers[0].name, country, 'EU'),
+                        id: generateEntityID(award.suppliers[0].name, supplier_country, country),
                         name: award.suppliers[0].name
                     }
                 }
+
+                // if(!contract.publish_date) {
+                //     if(contract.award_date) contract.publish_date = contract.award_date;
+                //     else if(contract.contract_date) contract.publish_date = contract.contract_date;
+                // }
 
                 contracts.push(contract);
             }
@@ -1134,7 +1140,7 @@ function getContractID(country, id_str) {
     return id;
 }
 
-function getOpenTenderCountry(release, role) {
+function getOpenTenderCountry(release, role, name='') {
     let country = '';
     if(release.parties?.length > 0) {
         release.parties.map(party => {
@@ -1142,6 +1148,7 @@ function getOpenTenderCountry(release, role) {
                 if(party.address?.countryName) {
                     country = party.address?.countryName;
                 }
+                if(name && name != party.name) country = '';
             }
         })
     }
