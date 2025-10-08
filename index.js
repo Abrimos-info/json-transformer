@@ -407,7 +407,6 @@ function guatecomprasOCDSContractsTransform(obj) {
                         description: getTenderDescriptionFromItems(release.tender),
                         publish_date: release.tender.datePublished,
                         award_date: award.date,
-                        contract_date: '',
                         amount: parseFloat(award.value?.amount),
                         currency: award.value?.currency,
                         method: release.tender.procurementMethod,
