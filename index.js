@@ -1029,7 +1029,7 @@ function openTenderContractsTransform(obj) {
     obj.releases.map( release => {
         let country = '';
         if(extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
-        else country = getOpenTenderCountry(release, 'buyer');
+        else country = getOpenTenderCountry(release, 'buyer', release.buyer.name);
         
         release.awards.map( award => {
             if(award.suppliers) {
@@ -1092,10 +1092,12 @@ function openTenderPartyObject(obj, role) {
     obj.releases.map( release => {
         let country = '';
         if(role == 'buyer' && extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
+        else if(role == 'buyer' && extraData?.country && extraData.country == 'ted') country = getOpenTenderCountry(release, role, release.buyer.name);
         else country = getOpenTenderCountry(release, role);
 
         release.parties.map( party => {
             if(party.roles.indexOf(role) >= 0 && party.name) {
+                if(role == 'buyer' && party.name != release.buyer.name) return;
                 partyObj = {
                     id: generateEntityID(party.name, country, 'EU'),
                     name: party.name,
