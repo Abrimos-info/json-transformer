@@ -97,7 +97,13 @@ try {
             case 'opentender_buyers':
                 return openTenderBuyersTransform(obj);
             case 'opentender_suppliers':
-                return openTenderSuppliersTransform(obj);
+                let open_suppliers = openTenderSuppliersTransform(obj);
+                if(open_suppliers.length > 0) {
+                    open_suppliers.map(p => {
+                        process.stdout.write( JSON.stringify(p) + '\n' );
+                    })
+                }
+                return;
             
             default:
                 return obj;
@@ -1089,6 +1095,7 @@ function openTenderPartyObject(obj, role) {
     if(!obj.releases || !obj.releases[0].parties?.length > 0) return;
     
     let partyObj;
+    let parties = [];
     obj.releases.map( release => {
         let country = '';
         if(role == 'buyer' && extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
@@ -1128,11 +1135,13 @@ function openTenderPartyObject(obj, role) {
                     if(party.contactPoint.telephone) partyObj.contactPoint.telephone = party.contactPoint.telephone;
                     if(party.contactPoint.url) partyObj.contactPoint.url = party.contactPoint.url;
                 }
+
+                parties.push(partyObj);
             }
         } );
     } );
 
-    return partyObj;
+    return parties;
 }
 
 function getContractID(country, id_str) {
