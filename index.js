@@ -95,7 +95,13 @@ try {
                 }
                 return;
             case 'opentender_buyers':
-                return openTenderBuyersTransform(obj);
+                let open_buyers = openTenderBuyersTransform(obj);
+                if(open_buyers.length > 0) {
+                    open_buyers.map(p => {
+                        process.stdout.write( JSON.stringify(p) + '\n' );
+                    })
+                }
+                return;
             case 'opentender_suppliers':
                 let open_suppliers = openTenderSuppliersTransform(obj);
                 if(open_suppliers.length > 0) {
@@ -1095,9 +1101,8 @@ function openTenderSuppliersTransform(obj) {
 }
 
 function openTenderPartyObject(obj, role) {
-    if(!obj.releases || !obj.releases[0].parties?.length > 0) return;
+    if(!obj.releases || !obj.releases[0].parties?.length > 0) return [];
     
-    let partyObj;
     let parties = [];
     obj.releases.map( release => {
         let country = '';
@@ -1108,7 +1113,7 @@ function openTenderPartyObject(obj, role) {
         release.parties.map( party => {
             if(party.roles.indexOf(role) >= 0 && party.name) {
                 if(role == 'buyer' && party.name != release.buyer.name) return;
-                partyObj = {
+                let partyObj = {
                     id: generateEntityID(party.name, country, 'EU'),
                     name: party.name,
                     identifier: getTaxId(party.additionalIdentifiers),
