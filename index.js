@@ -177,6 +177,8 @@ function getMonthNum(str) {
 /* * * * * * * * * * * * * * * * * * * */
 
 function guatecomprasProveedoresTransform(obj) {
+    if(!obj['Nombre o razón social']) return;
+
     let newObj = {
         id: '',
         name: '',
