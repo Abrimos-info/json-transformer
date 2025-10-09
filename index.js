@@ -1070,10 +1070,11 @@ function openTenderContractsTransform(obj) {
                     }
                 }
 
-                // if(!contract.publish_date) {
-                //     if(contract.award_date) contract.publish_date = contract.award_date;
-                //     else if(contract.contract_date) contract.publish_date = contract.contract_date;
-                // }
+                if(!contract.publish_date) {
+                    if(contract.award_date) contract.publish_date = contract.award_date;
+                    else if(contract.contract_date) contract.publish_date = contract.contract_date;
+                    else delete contract.publish_date;
+                }
 
                 contracts.push(contract);
             }
