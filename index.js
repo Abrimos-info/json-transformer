@@ -1063,7 +1063,7 @@ function openTenderContractsTransform(obj) {
 
                 // Add supplier data
                 if(award.suppliers?.length > 0 && award.suppliers[0].name) {
-                    let supplier_country = getOpenTenderCountry(release.parties, 'supplier', award.suppliers[0].name);
+                    let supplier_country = getOpenTenderCountry(release, 'supplier', award.suppliers[0].name);
                     contract.supplier = {
                         id: generateEntityID(award.suppliers[0].name, supplier_country, country),
                         name: award.suppliers[0].name
