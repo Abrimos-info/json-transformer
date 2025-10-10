@@ -1105,13 +1105,13 @@ function openTenderPartyObject(obj, role) {
     
     let parties = [];
     obj.releases.map( release => {
-        let country = '';
-        if(role == 'buyer' && extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
-        else if(role == 'buyer' && extraData?.country && extraData.country == 'ted') country = getOpenTenderCountry(release, role, release.buyer.name);
-        else country = getOpenTenderCountry(release, role);
-
         release.parties.map( party => {
             if(party.roles.indexOf(role) >= 0 && party.name) {
+                let country = '';
+                if(role == 'buyer' && extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
+                else if(role == 'buyer' && extraData?.country && extraData.country == 'ted') country = getOpenTenderCountry(release, role, release.buyer.name);
+                else country = getOpenTenderCountry(release, role, party.name);
+
                 if(role == 'buyer' && party.name != release.buyer.name) return;
                 let partyObj = {
                     id: generateEntityID(party.name, country, 'EU'),
