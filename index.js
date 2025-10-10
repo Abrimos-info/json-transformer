@@ -136,7 +136,7 @@ function guatecomprasTransform(obj) {
 }
 
 function parseRazonSocial(str) {
-    if(str.match(/.*,.*,.*,.*,.*/)) {
+    if(str.match(/.*,.*,.*,.*,.*/) && !str.match(/SOCIEDAD/)) {
         let [ apellido1, apellido2, apellido3, nombre1, nombre2 ] = str.split(',');
         return nombre1 + (nombre2? ' ' + nombre2 : '') + ' ' + apellido1 + (apellido2? ' ' + apellido2 : '') + (apellido3? ' ' + apellido3 : '')
     }
