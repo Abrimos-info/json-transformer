@@ -1161,12 +1161,17 @@ function getContractID(country, id_str) {
 function getOpenTenderCountry(release, role, name='') {
     let country = '';
     if(release.parties?.length > 0) {
+        let found = false;
         release.parties.map(party => {
-            if(party.roles.indexOf(role) >= 0) {
+            if(!found && party.roles.indexOf(role) >= 0) {
                 if(party.address?.countryName) {
                     country = party.address?.countryName;
+                    found = true;
                 }
-                if(name && name != party.name) country = '';
+                if(name && name != party.name) {
+                    country = '';
+                    found = false;
+                }
             }
         })
     }
