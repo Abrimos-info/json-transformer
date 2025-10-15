@@ -338,7 +338,8 @@ function guatecomprasHistoricoContractsTransform(obj) {
         award_date: obj.fecha_adjudicacion,
         buyer: {
             id: generateEntityID(obj.entidad_compradora, country, 'GT'),
-            name: obj.entidad_compradora
+            name: obj.entidad_compradora,
+            country: country
         },
         procuring_entity: {
             id: generateEntityID(obj.unidad_compradora + ' UC', country, 'GT'),
@@ -355,7 +356,8 @@ function guatecomprasHistoricoContractsTransform(obj) {
     if(obj.nit && obj.nombre) {
         contract.supplier = {
             id: generateEntityID(parseRazonSocial(obj.nombre), country, 'GT'),
-            name: parseRazonSocial(obj.nombre)
+            name: parseRazonSocial(obj.nombre),
+            country: country
         }
     }
 
@@ -376,7 +378,8 @@ function guatecomprasHistoricoBuyersTransform(obj) {
             name: obj.entidad_compradora,
             classification: 'government_institution',
             country: country,
-            source: 'guatecompras_historico'
+            source: 'guatecompras_historico',
+            updated_date: obj.fecha_publicacion
         } );
     }
     if(obj.unidad_compradora) {
@@ -389,7 +392,8 @@ function guatecomprasHistoricoBuyersTransform(obj) {
                 name: obj.entidad_compradora,
             },
             country: country,
-            source: 'guatecompras_historico'
+            source: 'guatecompras_historico',
+            updated_date: obj.fecha_publicacion
         } );
     }
 
@@ -435,7 +439,8 @@ function guatecomprasOCDSContractsTransform(obj) {
                     if(buyer) {
                         flat.buyer = {
                             id: generateEntityID(buyer.name, country, 'GT'),
-                            name: buyer.name
+                            name: buyer.name,
+                            country: country
                         }
                     }
                     
@@ -443,7 +448,8 @@ function guatecomprasOCDSContractsTransform(obj) {
                     if(uc) {
                         flat.procuring_entity = {
                             id: generateEntityID(uc.name + ' UC', country, 'GT'),
-                            name: uc.name
+                            name: uc.name,
+                            country: country
                         }
                     }
 
@@ -459,8 +465,9 @@ function guatecomprasOCDSContractsTransform(obj) {
                         suppliers = award.suppliers;
                     
                     if(suppliers.length > 0) {
+                        let supplier_country = getGuatecomprasOCDSCountry(release.parties, suppliers[0].name, 'GT');
                         flat.supplier = {
-                            id: generateEntityID(parseRazonSocial(suppliers[0].name), country, 'GT'),
+                            id: generateEntityID(parseRazonSocial(suppliers[0].name), supplier_country, 'GT'),
                             name: parseRazonSocial(suppliers[0].name)
                         }
                     }
@@ -478,6 +485,21 @@ function guatecomprasOCDSContractsTransform(obj) {
     }
 
     return flatContracts;
+}
+
+function getGuatecomprasOCDSCountry(parties, name, default_country) {
+    let country = default_country;
+    if(parties.length > 0) {
+        parties.map( party => {
+            if(party.name == name) {
+                if(party.identifier?.scheme == 'GT-GCID') {
+                    country = party.identifier.id.substring(0,2);
+                }
+            }
+        } );
+    }
+
+    return country;
 }
 
 function findContract(release, award) {
@@ -542,7 +564,8 @@ function guatecomprasOCDSBuyersTransform(obj) {
                 },
                 contactPoint: buyer.contactPoint,
                 country: country,
-                source: 'guatecompras_ocds'
+                source: 'guatecompras_ocds',
+                updated_date: release.tender.datePublished
             } );
         }
 
@@ -565,7 +588,8 @@ function guatecomprasOCDSBuyersTransform(obj) {
                 },
                 contactPoint: uc.contactPoint,
                 country: country,
-                source: 'guatecompras_ocds'
+                source: 'guatecompras_ocds',
+                updated_date: release.tender.datePublished
             } );
         }
     }
@@ -598,7 +622,8 @@ function guatecomprasOCDSSuppliersTransform(obj) {
                         country: country
                     },
                     contactPoint: party.contactPoint,
-                    source: 'guatecompras_ocds'
+                    source: 'guatecompras_ocds',
+                    updated_date: release.tender.datePublished
                 })
             }
         } );
@@ -1057,7 +1082,8 @@ function openTenderContractsTransform(obj) {
                     contract_date: getContractDate(getContractForAward(release.contracts, award.id)),
                     buyer: {
                         id: generateEntityID(release.buyer.name, country, 'EU'),
-                        name: release.buyer.name
+                        name: release.buyer.name,
+                        country: country
                     },
                     supplier: {},
                     amount: parseFloat(award.value?.amount),
@@ -1068,13 +1094,27 @@ function openTenderContractsTransform(obj) {
                     url: getAwardNotice(award.documents), // Puede ser tenderNotice o awardNotice, usamos el segundo
                     source: 'opentender'
                 }
+                
+                let allBuyers = getAllOpenTenderBuyers(release.parties, release.buyer.name);
+                if(allBuyers.length > 0) {
+                    contract.other_buyers = []
+                    allBuyers.map(b => {
+                        let buyer_country = getOpenTenderCountry(release, 'buyer', b.name);
+                        contract.other_buyers.push({
+                            id: generateEntityID(b.name, buyer_country, 'EU'),
+                            name: b.name,
+                            country: buyer_country
+                        });
+                    });
+                }
 
                 // Add supplier data
                 if(award.suppliers?.length > 0 && award.suppliers[0].name) {
                     let supplier_country = getOpenTenderCountry(release, 'supplier', award.suppliers[0].name);
                     contract.supplier = {
                         id: generateEntityID(award.suppliers[0].name, supplier_country, country),
-                        name: award.suppliers[0].name
+                        name: award.suppliers[0].name,
+                        country: supplier_country
                     }
                 }
 
@@ -1118,7 +1158,8 @@ function openTenderPartyObject(obj, role) {
                     name: party.name,
                     identifier: getTaxId(party.additionalIdentifiers),
                     country: country,
-                    source: 'opentender'
+                    source: 'opentender',
+                    updated_date: getContractDate(release.date)
                 }
 
                 let sane_name = transliterate(party.name);
@@ -1621,6 +1662,26 @@ function getAwardNotice(documents) {
     return url;
 }
 
+function getAllOpenTenderBuyers(parties, exclude_buyer='') {
+    let buyers = [];
+    let buyer_names = [];
+    
+    if(parties.length > 0) {
+        parties.map(party => {
+            if(party.name != exclude_buyer && party.roles.indexOf('buyer') >= 0) {
+                if(buyer_names.indexOf(party.name) < 0) {
+                    buyers.push(party);
+                    buyer_names.push(party.name);
+                }
+            }
+        });
+    }
+    
+    return buyers;
+}
+
+
+/*  HELPERS   */
 
 function parseValueString(str) {
     const trimmed = str.trim();
