@@ -37,7 +37,10 @@ try {
                 return guatecomprasTransform(obj);
             
             case 'guatecompras_proveedores':
-                return guatecomprasProveedoresTransform(obj);
+                let gc_proveedores = guatecomprasProveedoresTransform(obj);
+                if(gc_proveedores.length > 0)
+                    gc_proveedores.map(p => { process.stdout.write( JSON.stringify(p) + '\n' ) });
+                return;
             
             case 'guatecompras_historico_contracts':
                 return guatecomprasHistoricoContractsTransform(obj);
@@ -189,6 +192,8 @@ function getMonthNum(str) {
 
 function guatecomprasProveedoresTransform(obj) {
     if(!obj['Nombre o razón social']) return;
+    let entities = [];
+    let representantes = [];
 
     let newObj = {
         id: '',
@@ -279,10 +284,12 @@ function guatecomprasProveedoresTransform(obj) {
                 break;
 
             case 'Estatus del NIT en SAT':
-                newObj.tax_status = obj[k];
+                if(obj[k] != '[--NO ESPECIFICADO--]')
+                    newObj.tax_status = obj[k];
                 break;
             case 'Motivo del Estatus':
-                newObj.tax_status_reason = obj[k];
+                if(obj[k] != '[--NO ESPECIFICADO--]')
+                    newObj.tax_status_reason = obj[k];
                 break;
             case 'Departamento':
                 if(!newObj.address) newObj.address = {}
@@ -298,11 +305,13 @@ function guatecomprasProveedoresTransform(obj) {
                 break;
             case 'Teléfonos':
                 if(!newObj.contactPoint) newObj.contactPoint = {}
-                newObj.contactPoint.telephone = obj[k];
+                if(obj[k] != '[--NO ESPECIFICADO--]')
+                    newObj.contactPoint.telephone = obj[k];
                 break;
             case 'Números de fax':
                 if(!newObj.contactPoint) newObj.contactPoint = {}
-                newObj.contactPoint.faxNumber = obj[k];
+                if(obj[k] != '[--NO ESPECIFICADO--]')
+                    newObj.contactPoint.faxNumber = obj[k];
                 break;
 
             case 'Representantes Legales':
@@ -316,9 +325,17 @@ function guatecomprasProveedoresTransform(obj) {
                             rl.name = parseRazonSocial(r['Nombre']);
                             rl.id = generateEntityID(rl.name, 'GT', 'GT');
                         }
-                        if(r.hasOwnProperty('Plazo de Nombramiento')) rl.representation_date = parseFecha(r['Plazo de Nombramiento']);
+                        if(r.hasOwnProperty('Plazo de Nombramiento') && r['Plazo de Nombramiento'] != '[--NO ESPECIFICADO--]') rl.representation_date = parseFecha(r['Plazo de Nombramiento']);
                         if(r.hasOwnProperty('Otras Representaciones')) rl.has_other_representations = r['Otras Representaciones'];
                         newObj.representatives.push(rl);
+                        entities.push({
+                            id: rl.id,
+                            name: rl.name,
+                            identifier: rl.identifier,
+                            country: 'GT',
+                            source: 'guatecompras_proveedores',
+                            updated_date: newObj.updated_date
+                        })
                     } )
                 }
                 break;
@@ -329,7 +346,9 @@ function guatecomprasProveedoresTransform(obj) {
         let unique_names = new Set([...newObj['other_names']]);
         newObj['other_names'] = [...unique_names];
     }
-    return newObj;
+    entities.push(newObj);
+
+    return entities;
 }
 
 function guatecomprasHistoricoContractsTransform(obj) {
