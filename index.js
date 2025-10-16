@@ -1174,10 +1174,12 @@ function openTenderContractsTransform(obj) {
 }
 
 function openTenderBuyersTransform(obj) {
+    if(!obj.releases || !obj.releases[0].awards) return;
     return openTenderPartyObject(obj, 'buyer');
 }
 
 function openTenderSuppliersTransform(obj) {
+    if(!obj.releases || !obj.releases[0].awards) return;
     return openTenderPartyObject(obj, 'supplier');
 }
 
@@ -1192,8 +1194,8 @@ function openTenderPartyObject(obj, role) {
                 if(role == 'buyer' && extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
                 else if(role == 'buyer' && extraData?.country && extraData.country == 'ted') country = getOpenTenderCountry(release, role, release.buyer.name);
                 else country = getOpenTenderCountry(release, role, party.name);
-
-                if(role == 'buyer' && party.name != release.buyer.name) return;
+                
+                // if(role == 'buyer' && party.name != release.buyer.name) return;
                 let partyObj = {
                     id: generateEntityID(party.name, country, 'EU'),
                     name: party.name,
@@ -1229,6 +1231,29 @@ function openTenderPartyObject(obj, role) {
                 parties.push(partyObj);
             }
         } );
+
+        if(role == 'buyer') { // Check if buyer object contains buyer not in parties
+            let found = false;
+            parties.map(p => {
+                if(p.name == release.buyer.name) found = true;
+            })
+
+            if(!found) {
+                country = '';
+                if(role == 'buyer' && extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
+                else if(role == 'buyer' && extraData?.country && extraData.country == 'ted') country = getOpenTenderCountry(release, role, release.buyer.name);
+                else country = getOpenTenderCountry(release, role, party.name);
+
+                let finalBuyer = {
+                    id: generateEntityID(release.buyer.name, country, 'EU'),
+                    name: release.buyer.name,
+                    country: country,
+                    source: 'opentender',
+                    updated_date: getContractDate(release.date)
+                }
+                parties.push(finalBuyer);
+            }
+        }        
     } );
 
     return parties;
@@ -1264,6 +1289,8 @@ function getOpenTenderCountry(release, role, name='') {
         if(buyer?.id.match(/^\w{3}_/)) country = 'SK';
         if(buyer?.id.match(/^hash/)) country = buyer.id.substring(12, 14);
     }
+
+    if(country == 'VE' || country == 'VU') country = 'BG'; // Fix for source errors in specific contracts
 
     if(country.length != 2) {
         country = getOpenTenderCountryCode(country);
