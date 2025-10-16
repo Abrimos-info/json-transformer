@@ -35,8 +35,10 @@ try {
         switch(args.transform) {
             case 'guatecompras':
                 return guatecomprasTransform(obj);
+            
             case 'guatecompras_proveedores':
                 return guatecomprasProveedoresTransform(obj);
+            
             case 'guatecompras_historico_contracts':
                 return guatecomprasHistoricoContractsTransform(obj);
             case 'guatecompras_historico_buyers':
@@ -47,6 +49,9 @@ try {
                     })
                 }
                 return;
+            case 'guatecompras_historico_suppliers':
+                return guatecomprasHistoricoSuppliersTransform(obj);
+            
             case 'guatecompras_ocds_contracts':
                 let gc_ocds_contracts = guatecomprasOCDSContractsTransform(obj);
                 if(gc_ocds_contracts.length > 0) {
@@ -398,6 +403,23 @@ function guatecomprasHistoricoBuyersTransform(obj) {
     }
 
     return entities;
+}
+
+function guatecomprasHistoricoSuppliersTransform(obj) {
+    if(obj.nombre) {
+        let country = 'GT';
+        let supplier = {
+            id: generateEntityID(obj.nombre, country, 'GT'),
+            name: obj.nombre,
+            identifier: obj.nit,
+            country: country,
+            source: 'guatecompras_historico',
+            updated_date: obj.fecha_publicacion
+        }
+        
+        return supplier;
+    }
+    else return;
 }
 
 
