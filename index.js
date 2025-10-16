@@ -1262,6 +1262,7 @@ function getOpenTenderCountryCode(str) {
             return 'AQ';
 
         case 'Argentina':
+        case 'Аргентина':
             return 'AR';
 
         case 'Austria':
@@ -1287,6 +1288,7 @@ function getOpenTenderCountryCode(str) {
         case 'Белгиqуе/Белгиë':
             return 'BE';
         
+        case 'Bolgarija':
         case 'Bulgária':
         case 'Bulgaria':
         case 'Bugarska':
@@ -1342,6 +1344,7 @@ function getOpenTenderCountryCode(str) {
             return 'DE';
 
         case 'Danska':
+        case 'Dánia':
         case 'Denmark':
         case 'Данмарк':
             return 'DK';
@@ -1473,6 +1476,7 @@ function getOpenTenderCountryCode(str) {
         case 'Luxembourg':
             return 'LU';
         
+        case 'Lettország':
         case 'Latvia':
             return 'LV';
         
@@ -1483,6 +1487,7 @@ function getOpenTenderCountryCode(str) {
         case 'Монтенегро':
             return 'ME';
         
+        case 'Nekdanja jug. republika Makedonija':
         case 'Мацедониа (тхе формер Yугослав Републиц оф)':
             return 'MK';
         
@@ -1501,6 +1506,7 @@ function getOpenTenderCountryCode(str) {
         case 'Hollandia':
         case 'Nizozemska':
         case 'Netherlands':
+        case 'Недерланд':
         case 'Pays Bas':
             return 'NL';
         
@@ -1572,6 +1578,7 @@ function getOpenTenderCountryCode(str) {
             return 'TG';
         
         case 'Turska':
+        case "Törökország":
         case 'Turkey':
         case 'Türkiye':
         case 'Turčija':
