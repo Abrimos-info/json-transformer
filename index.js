@@ -1110,7 +1110,7 @@ function openTenderContractsTransform(obj) {
         let country = '';
         if(extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
         else country = getOpenTenderCountry(release, 'buyer', release.buyer.name);
-        
+
         release.awards.map( award => {
             if(award.suppliers) {
                 let contract = {
@@ -1140,12 +1140,14 @@ function openTenderContractsTransform(obj) {
                 if(allBuyers.length > 0) {
                     contract.other_buyers = []
                     allBuyers.map(b => {
-                        let buyer_country = getOpenTenderCountry(release, 'buyer', b.name);
-                        contract.other_buyers.push({
-                            id: generateEntityID(b.name, buyer_country, 'EU'),
-                            name: b.name,
-                            country: buyer_country
-                        });
+                        if(b.name) {
+                            let buyer_country = getOpenTenderCountry(release, 'buyer', b.name);
+                            contract.other_buyers.push({
+                                id: generateEntityID(b.name, buyer_country, 'EU'),
+                                name: b.name,
+                                country: buyer_country
+                            });
+                        }
                     });
                 }
 
@@ -1174,12 +1176,12 @@ function openTenderContractsTransform(obj) {
 }
 
 function openTenderBuyersTransform(obj) {
-    if(!obj.releases || !obj.releases[0].awards) return;
+    if(!obj.releases || !obj.releases[0].awards) return [];
     return openTenderPartyObject(obj, 'buyer');
 }
 
 function openTenderSuppliersTransform(obj) {
-    if(!obj.releases || !obj.releases[0].awards) return;
+    if(!obj.releases || !obj.releases[0].awards) return [];
     return openTenderPartyObject(obj, 'supplier');
 }
 
