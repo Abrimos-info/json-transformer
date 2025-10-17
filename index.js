@@ -370,7 +370,8 @@ function guatecomprasHistoricoContractsTransform(obj) {
         },
         procuring_entity: {
             id: generateEntityID(obj.unidad_compradora + ' UC', country, 'GT'),
-            name: obj.unidad_compradora
+            name: obj.unidad_compradora,
+            country: country
         },
         method: obj.modalidad,
         method_details: obj.submodalidad,
@@ -417,6 +418,7 @@ function guatecomprasHistoricoBuyersTransform(obj) {
             member_of: {
                 id: generateEntityID(obj.entidad_compradora, country, 'GT'),
                 name: obj.entidad_compradora,
+                country: country
             },
             country: country,
             source: 'guatecompras_historico',
@@ -512,7 +514,8 @@ function guatecomprasOCDSContractsTransform(obj) {
                         let supplier_country = getGuatecomprasOCDSCountry(release.parties, suppliers[0].name, 'GT');
                         flat.supplier = {
                             id: generateEntityID(parseRazonSocial(suppliers[0].name), supplier_country, 'GT'),
-                            name: parseRazonSocial(suppliers[0].name)
+                            name: parseRazonSocial(suppliers[0].name),
+                            country: supplier_country
                         }
                     }
                     
@@ -623,6 +626,7 @@ function guatecomprasOCDSBuyersTransform(obj) {
                 member_of: {
                     id: generateEntityID(uc.memberOf[0].name, country, 'GT'),
                     name: uc.memberOf[0].name,
+                    country: country
                 },
                 address: {
                     street: uc.address?.streetAddress,
@@ -1134,7 +1138,7 @@ function openTenderContractsTransform(obj) {
                     currency: award.value?.currency,
                     method: release.tender?.procurementMethod,
                     method_details: release.tender?.procurementMethodDetails,
-                    category: [ release.tender?.mainProcurementCategory ],
+                    categories: [ release.tender?.mainProcurementCategory ],
                     url: getAwardNotice(award.documents), // Puede ser tenderNotice o awardNotice, usamos el segundo
                     source: 'opentender'
                 }
