@@ -237,7 +237,8 @@ function guatecomprasProveedoresTransform(obj) {
                 newObj['other_names'].push(...obj[k]);
                 break;
             case 'Estado del proveedor (Obtenido desde RGAE)':
-                newObj.status = obj[k];
+                if(obj[k] != '[--NO ESPECIFICADO--]')
+                    newObj.status = obj[k];
                 break;
             case 'Adjudicado o No adjudicado':
                 newObj.has_awards = (obj[k] == 'ADJUDICADO')? true : false;
@@ -252,7 +253,8 @@ function guatecomprasProveedoresTransform(obj) {
                 newObj.additional_identifier = obj[k].toString();
                 break;
             case 'Número de escritura de constitución':
-                newObj.creation_document_number = obj[k];
+                if(obj[k] != '[--NO ESPECIFICADO--]')
+                    newObj.creation_document_number = obj[k];
                 break;
             case 'Fecha de constitución':
                 newObj.creation_date = parseFecha(obj[k]);
@@ -267,7 +269,8 @@ function guatecomprasProveedoresTransform(obj) {
                 newObj.tax_registration_date = parseFecha(obj[k]);
                 break;
             case 'Actividad Económica':
-                newObj.main_activity = obj[k];
+                if(obj[k] != '[--NO ESPECIFICADO--]')
+                    newObj.main_activity = obj[k];
                 break;
 
             case 'Notario':
