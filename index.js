@@ -1214,9 +1214,9 @@ function openTenderPartyObjects(obj, role) {
                     source: 'opentender',
                     updated_date: getContractDate(release.date)
                 }
-                if(role == 'buyer' && party.name.match(/\(.*\)$/)) {
-                    partyObj.name = party.name.replace(/\(.*\)$/, '').trim();
-                    partyObj.initials = party.name.match(/\(.*\)$/)[0].replace(/\(|\)/g, '');
+                if(role == 'buyer' && party.name.match(/\(\w*\)$/)) {
+                    partyObj.name = party.name.replace(/\(\w*\)$/, '').trim();
+                    partyObj.initials = party.name.match(/\(\w*\)$/)[0].replace(/\(|\)/g, '');
                 }
 
                 let sane_name = transliterate(party.name);
@@ -1264,6 +1264,10 @@ function openTenderPartyObjects(obj, role) {
                     country: country,
                     source: 'opentender',
                     updated_date: getContractDate(release.date)
+                }
+                if(release.buyer.name.match(/\(\w*\)$/)) {
+                    finalBuyer.name = release.buyer.name.replace(/\(\w*\)$/, '').trim();
+                    finalBuyer.initials = release.buyer.name.match(/\(\w*\)$/)[0].replace(/\(|\)/g, '');
                 }
                 parties.push(finalBuyer);
             }
@@ -1794,7 +1798,7 @@ function parseValueString(str) {
 }
 
 function generateEntityID(str, entity_country, contract_country) {
-    if(str.match(/\(.*\)$/)) str = str.replace(/\(.*\)$/, '');
+    if(str.match(/\(\w*\)$/)) str = str.replace(/\(\w*\)$/, '');
     str = str.replace(/\./g, ' ').trim();
     str = slugify(str + ' ' + (entity_country ? entity_country : contract_country));
     return str.replace(/-{2,}/g, '-');
