@@ -1790,6 +1790,7 @@ function parseValueString(str) {
 }
 
 function generateEntityID(str, entity_country, contract_country) {
+    if(str.match(/\(.*\)$/)) str = str.replace(/\(.*\)$/, '');
     str = str.replace(/\./g, ' ').trim();
     str = slugify(str + ' ' + (entity_country ? entity_country : contract_country));
     return str.replace(/-{2,}/g, '-');
