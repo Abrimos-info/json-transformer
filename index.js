@@ -1214,6 +1214,10 @@ function openTenderPartyObjects(obj, role) {
                     source: 'opentender',
                     updated_date: getContractDate(release.date)
                 }
+                if(role == 'buyer' && party.name.match(/\(.*\)$/)) {
+                    partyObj.name = party.name.replace(/\(.*\)$/, '').trim();
+                    partyObj.initials = party.name.match(/\(.*\)$/)[0].replace(/\(|\)/g, '');
+                }
 
                 let sane_name = transliterate(party.name);
                 if(sane_name != party.name)
