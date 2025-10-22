@@ -1480,6 +1480,8 @@ function getOpenTenderCountryCode(str) {
         case 'Хрватска':
             return 'HR';
         
+        case '+36 36 516 430':
+        case '001. rész; 002. rész: Magyarország':
         case 'Budapest':
         case 'Franciaország ; Magyarország':
         case 'HUN':
@@ -1553,6 +1555,7 @@ function getOpenTenderCountryCode(str) {
         case 'Luxembourg':
             return 'LU';
         
+        case "1":
         case 'Lettország':
         case 'Latvia':
             return 'LV';
