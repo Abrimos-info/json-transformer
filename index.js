@@ -1287,7 +1287,7 @@ function getOpenTenderCountry(release, role, name='') {
             if(!found && party.roles.indexOf(role) >= 0) {
                 if(party.address?.countryName) {
                     country = party.address?.countryName;
-                    if(party.contactPoint?.email.match(/europa\.eu/)) country = 'EU';
+                    if(party.contactPoint?.email && party.contactPoint.email.match(/europa\.eu/)) country = 'EU';
                     found = true;
                 }
                 if(name && name != party.name) {
