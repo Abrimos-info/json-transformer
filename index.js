@@ -1230,7 +1230,7 @@ function openTenderPartyObjects(obj, role) {
                     partyObj.address = {}
                     if(party.address.street) partyObj.address.street = party.address.street;
                     if(party.address.region) partyObj.address.region = party.address.region;
-                    if(party.address.postal_code) partyObj.address.postal_code = party.address.postal_code;
+                    if(party.address.postalCode) partyObj.address.postal_code = party.address.postalCode;
                     if(party.address.countryName) partyObj.address.country = getOpenTenderCountryCode(party.address.countryName);
                 }
 
