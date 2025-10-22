@@ -1184,15 +1184,15 @@ function openTenderContractsTransform(obj) {
 
 function openTenderBuyersTransform(obj) {
     if(!obj.releases || !obj.releases[0].awards) return [];
-    return openTenderPartyObject(obj, 'buyer');
+    return openTenderPartyObjects(obj, 'buyer');
 }
 
 function openTenderSuppliersTransform(obj) {
     if(!obj.releases || !obj.releases[0].awards) return [];
-    return openTenderPartyObject(obj, 'supplier');
+    return openTenderPartyObjects(obj, 'supplier');
 }
 
-function openTenderPartyObject(obj, role) {
+function openTenderPartyObjects(obj, role) {
     if(!obj.releases || !obj.releases[0].parties?.length > 0) return [];
     
     let parties = [];
@@ -1200,11 +1200,12 @@ function openTenderPartyObject(obj, role) {
         release.parties.map( party => {
             if(party.roles.indexOf(role) >= 0 && party.name) {
                 let country = '';
-                if(role == 'buyer' && extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
-                else if(role == 'buyer' && extraData?.country && extraData.country == 'ted') country = getOpenTenderCountry(release, role, release.buyer.name);
+                if(role == 'buyer') {
+                    if(extraData?.country && extraData.country != 'ted') country = extraData?.country.toUpperCase();
+                    else if(extraData?.country && extraData.country == 'ted') country = getOpenTenderCountry(release, role, party.name);
+                }
                 else country = getOpenTenderCountry(release, role, party.name);
                 
-                // if(role == 'buyer' && party.name != release.buyer.name) return;
                 let partyObj = {
                     id: generateEntityID(party.name, country, 'EU'),
                     name: party.name,
@@ -1282,6 +1283,7 @@ function getOpenTenderCountry(release, role, name='') {
             if(!found && party.roles.indexOf(role) >= 0) {
                 if(party.address?.countryName) {
                     country = party.address?.countryName;
+                    if(party.contactPoint?.email.match(/europa\.eu/)) country = 'EU';
                     found = true;
                 }
                 if(name && name != party.name) {
