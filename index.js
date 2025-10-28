@@ -546,6 +546,8 @@ function getGuatecomprasOCDSCountry(parties, name, default_country) {
         } );
     }
 
+    if(!country.match(/[A-Za-z]{2}/)) country = default_country;
+
     return country;
 }
 
@@ -657,17 +659,18 @@ function guatecomprasOCDSSuppliersTransform(obj) {
         release.parties.map( party => {
             if(party.roles.indexOf('supplier') >= 0) {
                 let fixedName = parseRazonSocial(party.name);
+                let supplier_country = getGuatecomprasOCDSCountry(release.parties, party.name, 'GT');
                 entities.push({
-                    id: generateEntityID(fixedName, 'GT', 'GT'),
+                    id: generateEntityID(fixedName, supplier_country, 'GT'),
                     name: fixedName,
                     identifier: getOCDSSupplierID(party),
                     classification: party.details?.legalEntityTypeDetail?.description,
-                    country: country,
+                    country: supplier_country,
                     address: {
                         street: party.address?.streetAddress,
                         locality: party.address?.locality,
                         region: party.address?.region,
-                        country: country
+                        country: supplier_country
                     },
                     contactPoint: party.contactPoint,
                     source: 'guatecompras_ocds',
