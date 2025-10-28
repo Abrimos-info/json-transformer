@@ -219,7 +219,8 @@ function guatecomprasProveedoresTransform(obj) {
                 newObj.id = generateEntityID(newObj.name, 'GT', 'GT');
                 break;
             case 'Tipo de organización':
-                newObj.classification = obj[k];
+                if(obj[k] != '[--NO ESPECIFICADO--]')
+                    newObj.classification = obj[k];
                 break;
             case 'Número de Identificación Tributaria (NIT)':
                 newObj.identifier = obj[k].toString();
