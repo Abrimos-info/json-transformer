@@ -483,12 +483,11 @@ function guatecomprasOCDSContractsTransform(obj) {
                     }
                     
                     let buyer = getGuatecomprasOCDSBuyer(release.parties);
-                    if(buyer) {
-                        flat.buyer = {
-                            id: generateEntityID(buyer.name, country, 'GT'),
-                            name: buyer.name,
-                            country: country
-                        }
+                    if(!buyer) buyer = release.buyer;
+                    flat.buyer = {
+                        id: generateEntityID(buyer.name, country, 'GT'),
+                        name: buyer.name,
+                        country: country
                     }
                     
                     let uc = getGuatecomprasOCDSBuyer(release.parties, true);
@@ -613,6 +612,20 @@ function guatecomprasOCDSBuyersTransform(obj) {
                     country: country
                 },
                 contactPoint: buyer.contactPoint,
+                country: country,
+                source: 'guatecompras_ocds',
+                updated_date: release.tender.datePublished
+            } );
+        }
+        else if(release.buyer) {
+            entities.push( {
+                id: generateEntityID(release.buyer.name, country, 'GT'),
+                name: release.buyer.name,
+                classification: 'government_institution',
+                identifier: release.buyer.id.replace(/^\w{2}-\w{2,4}-/, ''),
+                address: {
+                    country: country
+                },
                 country: country,
                 source: 'guatecompras_ocds',
                 updated_date: release.tender.datePublished
