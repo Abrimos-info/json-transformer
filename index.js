@@ -95,9 +95,9 @@ try {
                 return proactSuppliersTransform(obj);
 
             case 'opentender_contracts':
-                let contracts = openTenderContractsTransform(obj);
-                if(contracts.length > 0) {
-                    contracts.map(c => {
+                let ot_contracts = openTenderContractsTransform(obj);
+                if(ot_contracts.length > 0) {
+                    ot_contracts.map(c => {
                         process.stdout.write( JSON.stringify(c) + '\n' );
                     })
                 }
@@ -119,6 +119,31 @@ try {
                 }
                 return;
             
+            case 'ecuador_ocds_contracts':
+                let ec_contracts = ecuadorOCDSContractsTransform(obj);
+                if(ec_contracts.length > 0) {
+                    ec_contracts.map(c => {
+                        process.stdout.write( JSON.stringify(c) + '\n' );
+                    })
+                }
+                return;
+            case 'ecuador_ocds_buyers':
+                let ec_buyers = ecuadorOCDSBuyersTransform(obj);
+                if(ec_buyers.length > 0) {
+                    ec_buyers.map(p => {
+                        process.stdout.write( JSON.stringify(p) + '\n' );
+                    })
+                }
+                return;
+            case 'ecuador_ocds_suppliers':
+                let ec_suppliers = ecuadorOCDSSuppliersTransform(obj);
+                if(ec_suppliers.length > 0) {
+                    ec_suppliers.map(p => {
+                        process.stdout.write( JSON.stringify(p) + '\n' );
+                    })
+                }
+                return;
+            
             default:
                 return obj;
         }
@@ -131,6 +156,8 @@ catch(e) { console.error(e) }
 process.stdin.on('end', () => {
   process.stdout.write('\n');
 });
+
+
 
 function guatecomprasTransform(obj) {
     if(obj.hasOwnProperty('contracts')) {
@@ -476,7 +503,7 @@ function guatecomprasOCDSContractsTransform(obj) {
                         currency: award.value?.currency,
                         method: release.tender.procurementMethod,
                         method_details: release.tender.procurementMethodDetails,
-                        categories: release.tender.mainProcurementCategory,
+                        categories: [ release.tender.mainProcurementCategory ],
                         status: release.tender.statusDetails,
                         url: 'https://www.guatecompras.gt/concursos/consultaConcurso.aspx?o=4&nog=' + release.ocid.replace('ocds-xqjsxa-', ''),
                         source: 'guatecompras_ocds'
@@ -1057,9 +1084,9 @@ function proactContractsTransform(obj) {
         id: getContractID(obj.tender_country, obj.tender_id),
         country: obj.tender_country,
         title: obj.lot_title,
-        publish_date: getContractDate(obj.tender_publications_firstcallfortenderdate),
-        award_date: obj.tender_publications_firstdcontractawarddate ? getContractDate(obj.tender_publications_firstdcontractawarddate) : getContractDate(obj.tender_awarddecisiondate),
-        contract_date: getContractDate(obj.tender_contractsignaturedate),
+        publish_date: getValidDate(obj.tender_publications_firstcallfortenderdate),
+        award_date: obj.tender_publications_firstdcontractawarddate ? getValidDate(obj.tender_publications_firstdcontractawarddate) : getValidDate(obj.tender_awarddecisiondate),
+        contract_date: getValidDate(obj.tender_contractsignaturedate),
         buyer: {
             id: generateEntityID(obj.buyer_name, obj.buyer_country, obj.tender_country),
             name: obj.buyer_name
@@ -1142,9 +1169,9 @@ function openTenderContractsTransform(obj) {
                     country: country,
                     title: release.tender.title ? transliterate(release.tender.title) : '',
                     description: release.tender.description ? transliterate(release.tender.description) : '',
-                    publish_date: getContractDate(release.date),
-                    award_date: getContractDate(award.date),
-                    contract_date: getContractDate(getContractForAward(release.contracts, award.id)),
+                    publish_date: getValidDate(release.date),
+                    award_date: getValidDate(award.date),
+                    contract_date: getValidDate(getContractForAward(release.contracts, award.id)),
                     buyer: {
                         id: generateEntityID(release.buyer.name, country, 'EU'),
                         name: release.buyer.name,
@@ -1229,7 +1256,7 @@ function openTenderPartyObjects(obj, role) {
                     identifier: getTaxId(party.additionalIdentifiers),
                     country: country,
                     source: 'opentender',
-                    updated_date: getContractDate(release.date)
+                    updated_date: getValidDate(release.date)
                 }
                 if(role == 'buyer' && party.name.match(/\(\w*\)$/)) {
                     partyObj.name = party.name.replace(/\(\w*\)$/, '').trim();
@@ -1280,7 +1307,7 @@ function openTenderPartyObjects(obj, role) {
                     name: release.buyer.name,
                     country: country,
                     source: 'opentender',
-                    updated_date: getContractDate(release.date)
+                    updated_date: getValidDate(release.date)
                 }
                 if(release.buyer.name.match(/\(\w*\)$/)) {
                     finalBuyer.name = release.buyer.name.replace(/\(\w*\)$/, '').trim();
@@ -1749,12 +1776,6 @@ function getTaxId(list) {
     return taxID;
 }
 
-function getContractDate(str) {
-    if(!str) return null;
-    if(str.match(/^\d{4}-\d{2}-\d{2}/)) return new Date(str).toISOString();
-    return null;
-}
-
 function getContractForAward(contracts, awardID) {
     let date = null;
     if(contracts?.length > 0) {
@@ -1794,8 +1815,217 @@ function getAllOpenTenderBuyers(parties, exclude_buyer='') {
     return buyers;
 }
 
+/* * * * * * * * * */
+/*  Ecuador OCDS   */
+/* * * * * * * * * */
 
-/*  HELPERS   */
+function ecuadorOCDSContractsTransform(release) {
+    let country = 'EC';
+    let contracts = []
+    if(!release.awards) return contracts;
+    
+    if(release.awards.length > 0) {
+        release.awards.map( award => {
+            let contract = {
+                id: getContractID(country, release.ocid + '-' + award.id),
+                country: country,
+                title: release.tender.title,
+                description: release.tender.description,
+                publish_date: getValidDate(release.date),
+                award_date: getValidDate(award.date),
+                contract_date: getValidDate(getContractForAward(release.contracts, award.id)),
+                buyer: {
+                    id: generateEntityID(release.buyer.name.toString(), country, 'EC'),
+                    name: release.buyer.name.toString(),
+                    country: country
+                },
+                supplier: {},
+                amount: parseFloat(award.value?.amount),
+                currency: award.value?.currency,
+                method: release.tender?.procurementMethod,
+                method_details: release.tender?.procurementMethodDetails,
+                categories: [ release.tender?.mainProcurementCategory ],
+                status: release.tender?.status,
+                // url: TODO: verificar en el portal oficial
+                source: 'ecuador_ocds'
+            }
+
+            if(award.suppliers?.length > 0 && award.suppliers[0].name) {
+                let supplier_country = getEcuadorCountry(release, 'supplier', award.suppliers[0].name);
+                contract.supplier = {
+                    id: generateEntityID(award.suppliers[0].name.toString(), supplier_country, country),
+                    name: award.suppliers[0].name.toString(),
+                    country: supplier_country
+                }
+            }
+
+            contracts.push(contract);
+        } );
+    }
+
+    return contracts;
+}
+
+function getEcuadorCountry(release, role, name='') {
+    let country = '';
+    if(release.parties?.length > 0) {
+        let found = false;
+        release.parties.map(party => {
+            if(!found && party.roles.indexOf(role) >= 0) {
+                if(party.address?.countryName) {
+                    country = getEcuadorCountryCode(party.address?.countryName);
+                    found = true;
+                }
+                if(name && name != party.name) {
+                    country = '';
+                    found = false;
+                }
+            }
+        })
+    }
+
+    return country;
+}
+
+function getEcuadorCountryCode(str) {
+    switch(str) {
+        case 'ANTILLAS HOLANDESAS':
+            return 'AN';
+        case 'ARGENTINA':
+            return 'AR';
+        case 'BELGICA':
+            return 'BE';
+        case 'BRASIL':
+            return 'BR';
+        case 'CANADA':
+            return 'CA';
+        case 'CHILE':
+            return 'CL';
+        case 'CHINA':
+            return 'CN';
+        case 'COLOMBIA':
+            return 'CO';
+        case 'ECUADOR':
+            return 'EC';
+        case 'ESPAÑA':
+            return 'ES';
+        case 'ESTADOS UNIDOS':
+            return 'US';
+        case 'FRANCIA':
+            return 'FR';
+        case 'HONDURAS':
+            return 'HN';
+        case 'INGLATERRA':
+            return 'UK';
+        case 'ITALIA':
+            return 'IT';
+        case 'JAPON':
+            return 'JP';
+        case 'MEXICO':
+            return 'MX';
+        case 'PAÍSES BAJOS':
+            return 'NL';
+        case 'PERU':
+            return 'PE';
+        case 'PUERTO RICO':
+            return 'PR';
+        case 'RUSIA':
+            return 'RU';
+        case 'URUGUAY':
+            return 'UY';
+        case 'VENEZUELA':
+            return 'VE';
+        default:
+            return 'EC';
+    }
+}
+
+function ecuadorOCDSBuyersTransform(obj) {
+    let release = obj;
+    let country = 'EC';
+    let entities = [];
+    
+    if(release.parties) {
+        let buyers = getOCDSPartiesByRole(release.parties, 'buyer');
+        if(buyers.length > 0) {
+            buyers.map( buyer => {
+                entities.push( {
+                    id: generateEntityID(buyer.name.toString(), country, 'EC'),
+                    name: buyer.name.toString(),
+                    identifier: (buyer.identifier?.id)? buyer.identifier?.id : buyer.id,
+                    address: {
+                        street: buyer.address?.streetAddress,
+                        locality: buyer.address?.locality,
+                        region: buyer.address?.region,
+                        country: (buyer.address?.countryName)? getEcuadorCountryCode(buyer.address.countryName) : country
+                    },
+                    contactPoint: buyer.contactPoint,
+                    country: country,
+                    source: 'ecuador_ocds',
+                    updated_date: getValidDate(release.date)
+                } );
+            } );
+        }
+        else if(release.buyer) {
+            entities.push( {
+                id: generateEntityID(release.buyer.name.toString(), country, 'EC'),
+                name: release.buyer.name.toString(),
+                identifier: release.buyer.id,
+                address: {
+                    country: country
+                },
+                country: country,
+                source: 'ecuador_ocds',
+                updated_date: getValidDate(release.date)
+            } );
+        }
+    }
+   
+    return entities;    
+}
+
+function ecuadorOCDSSuppliersTransform(obj) {
+    let release = obj;
+    let entities = [];
+    
+    if(release.parties) {
+        release.parties.map( party => {
+            if(party.roles.indexOf('supplier') >= 0) {
+                let supplier_country = getEcuadorCountry(release, 'supplier', party.name);
+                entities.push({
+                    id: generateEntityID(party.name.toString(), supplier_country, 'EC'),
+                    name: party.name.toString(),
+                    identifier: (party.identifier?.id)? party.identifier?.id : party.id,
+                    country: supplier_country,
+                    address: {
+                        street: party.address?.streetAddress,
+                        locality: party.address?.locality,
+                        region: party.address?.region,
+                        country: supplier_country
+                    },
+                    contactPoint: party.contactPoint,
+                    source: 'ecuador_ocds',
+                    updated_date: getValidDate(release.date)
+                })
+            }
+        } );
+    }
+
+    return entities;
+}
+
+/*  HELPERS  */
+function getOCDSPartiesByRole(list, role) {
+    let parties = [];
+
+    if(list.length > 0) {
+        list.map( item => {
+            if(item.roles.indexOf(role) >= 0) parties.push(item);
+        } );
+    }
+
+    return parties;
+}
 
 function parseValueString(str) {
     const trimmed = str.trim();
@@ -1819,6 +2049,12 @@ function generateEntityID(str, entity_country, contract_country) {
     str = str.replace(/\./g, ' ').trim();
     str = slugify(str + ' ' + (entity_country ? entity_country : contract_country));
     return str.replace(/-{2,}/g, '-');
+}
+
+function getValidDate(str) {
+    if(!str) return null;
+    if(str.match(/^\d{4}-\d{2}-\d{2}/)) return new Date(str).toISOString();
+    return null;
 }
 
 const isISOString = (val) => {
