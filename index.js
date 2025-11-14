@@ -36,6 +36,9 @@ try {
             case 'guatecompras':
                 return guatecomprasTransform(obj);
             
+            case 'guatecompras_npg':
+                return guatecomprasNPGTransform(obj);
+            
             case 'guatecompras_proveedores':
                 let gc_proveedores = guatecomprasProveedoresTransform(obj);
                 if(gc_proveedores.length > 0)
@@ -144,6 +147,16 @@ try {
                 }
                 return;
             
+            case 'uruguay_historico_contracts':
+            case 'uruguay_historico_buyers':
+            case 'uruguay_historico_suppliers':
+                return;
+
+            case 'uruguay_api_contracts':
+            case 'uruguay_api_buyers':
+            case 'uruguay_api_suppliers':
+                return;
+            
             default:
                 return obj;
         }
@@ -168,6 +181,75 @@ function guatecomprasTransform(obj) {
 	} );
     }
     return obj;
+}
+
+function guatecomprasNPGTransform(obj) {
+    if(obj.hasOwnProperty('id') && obj.id == 0) return;
+    if(!obj['Monto'] && !obj.monto) return;
+    let newObj = {}
+
+    Object.keys(obj).map( k => {
+        switch(k) {
+            case 'Código Concurso':
+            case 'codigoConcurso':
+                newObj.codigoConcurso = obj[k];
+                break;
+            case 'Año Publicación':
+            case 'añoDePublicación':
+                newObj.anio = obj[k].toString();
+                break;
+            case 'Mes':
+            case 'mes':
+                newObj.mes = obj[k].toString();
+                break;
+            case 'Nombre Mes':
+            case 'nombreMes':
+                newObj.nombreMes = obj[k];
+                break;
+            case 'Nombre Entidad Compradora':
+            case 'entidadCompradora':
+                newObj.entidadCompradora = obj[k];
+                break;
+            case 'Nombre Unidad Compradora':
+            case 'unidadCompradora':
+                newObj.unidadCompradora = obj[k];
+                break;
+            case 'Descripción Concurso':
+            case 'descripciónConcurso':
+                newObj.descripcionConcurso = obj[k];
+                break;
+            case 'Fecha Publicación':
+            case 'fechaDePublicación':
+                newObj.fechaPublicacion = getValidDate(obj[k]);
+                break;
+            case 'Modalidad':
+            case 'modalidad':
+                newObj.modalidad = obj[k];
+                break;
+            case 'Sub Modalidad':
+            case 'subModalidad':
+                newObj.submodalidad = obj[k];
+                break;
+            case 'Estatus Concurso':
+            case 'estatusDelConcurso':
+                newObj.estatusConcurso = obj[k];
+                break;
+            case 'NIT o País Proveedor':
+            case 'nitPaisProveedor':
+                newObj.nit = obj[k].toString();
+                break;
+            case 'Nombre Proveedor':
+            case 'nombreProveedor':
+                newObj.nombre = obj[k];
+                break;
+            case 'Monto':
+            case 'monto':
+                newObj.monto = parseFloat(obj[k]);
+                break;
+        }
+    } );
+
+    return newObj;
 }
 
 function parseRazonSocial(str) {
