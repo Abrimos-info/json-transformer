@@ -270,6 +270,7 @@ function parseFechaSat(str) {
     // 14.feb..2020 07:17:24
     let [ date, time ] = str.split(' ');
     let [ day, month, year ] = date.split(/\.{1,2}/);
+    // if(year < 2000) return null;
     return new Date( year + '-' + getMonthNum(month) + '-' + day + 'T' + time + '-06:00' );
 }
 
