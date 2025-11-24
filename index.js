@@ -1929,7 +1929,7 @@ function ecuadorOCDSContractsTransform(release) {
                 method_details: release.tender?.procurementMethodDetails,
                 categories: [ release.tender?.mainProcurementCategory ],
                 status: release.tender?.status,
-                // url: TODO: verificar en el portal oficial
+                url: 'https://datosabiertos.compraspublicas.gob.ec/PLATAFORMA/ocds/' + release.ocid,
                 source: 'ecuador_ocds'
             }
 
