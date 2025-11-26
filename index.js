@@ -442,14 +442,16 @@ function guatecomprasProveedoresTransform(obj) {
                         if(r.hasOwnProperty('Plazo de Nombramiento') && r['Plazo de Nombramiento'] != '[--NO ESPECIFICADO--]') rl.representation_date = parseFecha(r['Plazo de Nombramiento']);
                         if(r.hasOwnProperty('Otras Representaciones')) rl.has_other_representations = r['Otras Representaciones'];
                         newObj.representatives.push(rl);
-                        entities.push({
+                        let tempRep = {
                             id: rl.id,
                             name: rl.name,
                             identifier: rl.identifier,
                             country: 'GT',
                             source: 'guatecompras_proveedores',
                             updated_date: newObj.updated_date
-                        })
+                        };
+                        if(newObj.hasOwnProperty('profile_updated') && newObj.profile_updated) tempRep.profile_updated = true;
+                        entities.push(tempRep)
                     } )
                 }
                 break;
