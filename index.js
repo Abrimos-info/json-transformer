@@ -453,6 +453,10 @@ function guatecomprasProveedoresTransform(obj) {
                     } )
                 }
                 break;
+
+            case 'profile_updated':
+                newObj.profile_updated = obj[k];
+                break;
         }
     } );
 
