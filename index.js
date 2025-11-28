@@ -148,6 +148,13 @@ try {
                 return;
             
             case 'uruguay_historico_contracts':
+                let uy_hist_contracts = uruguayHistoricoContractsTransform(obj);
+                if(uy_hist_contracts.length > 0) {
+                    uy_hist_contracts.map(c => {
+                        process.stdout.write( JSON.stringify(c) + '\n' );
+                    })
+                }
+                return;
             case 'uruguay_historico_buyers':
             case 'uruguay_historico_suppliers':
                 return;
@@ -2103,6 +2110,77 @@ function ecuadorOCDSSuppliersTransform(obj) {
     return entities;
 }
 
+/* * * * * * * * * * * */
+/*  Uruguay Histórico  */
+/* * * * * * * * * * * */
+
+function uruguayHistoricoContractsTransform(release) {
+    let country = 'UY';
+    let default_currency = 'UYU';
+    let contracts = []
+    if(!release.awards) return contracts;
+
+    if(release.awards.length > 0 && release.buyer) {
+        release.awards.map( award => {
+            let details = getUruguayAwardDetails(award);
+            if(award.status && award.status != 'unsuccessful' && award.suppliers && details.amount > 0) {
+                let contract = {
+                    id: getContractID(country, release.ocid + '-' + award.id),
+                    country: country,
+                    title: (release.tender?.title ? release.tender.title : award.title),
+                    description: (release.tender?.description ? release.tender.description : details.description),
+                    publish_date: getValidDate(release.date),
+                    award_date: getValidDate(award.date),
+                    buyer: {
+                        id: generateEntityID(release.buyer.name.toString(), country, 'UY'),
+                        name: release.buyer.name.toString(),
+                        country: country
+                    },
+                    supplier: {},
+                    amount: details.amount,
+                    currency: (details.currency? details.currency : default_currency),
+                    method: release.tender?.procurementMethod,
+                    method_details: release.tender?.procurementMethodDetails,
+                    source: 'uruguay_historico'
+                }
+
+                if(award.suppliers?.length > 0 && award.suppliers[0].name) {
+                    let clean_name = award.suppliers[0].name.toString().replace(/\s{2,}/g, ' ');
+                    contract.supplier = {
+                        id: generateEntityID(clean_name, country, 'UY'),
+                        name: clean_name,
+                        country: country
+                    }
+                }
+
+                contracts.push(contract);
+            }
+        } );
+    }
+
+    return contracts;
+}
+
+function getUruguayAwardDetails(award) {
+    let currency = null;
+    let sum = 0;
+    let descriptions = [];
+    if(award.value?.amount) return parseFloat(award.value.amount);
+    else {
+        if(award.items && award.items.length > 0) {
+            award.items.map( item => {
+                if(item.unit?.value?.amount) sum += parseFloat(item.unit.value.amount) * item.quantity;
+                if(item.unit.value?.currency) currency = item.unit.value.currency;
+                if(item.classification?.description && descriptions.indexOf(item.classification.description) < 0)
+                    descriptions.push(item.classification.description);
+            } );
+        }
+    }
+
+    return { amount: sum, currency: currency, description: descriptions.join(', ') }
+}
+
+
 /*  HELPERS  */
 function getOCDSPartiesByRole(list, role) {
     let parties = [];
@@ -2135,7 +2213,7 @@ function parseValueString(str) {
 
 function generateEntityID(str, entity_country, contract_country) {
     if(str.match(/\(\w*\)$/)) str = str.replace(/\(\w*\)$/, '');
-    str = str.replace(/\./g, ' ').trim();
+    str = str.replace(/\./g, '').trim();
     str = slugify(str + ' ' + (entity_country ? entity_country : contract_country));
     return str.replace(/-{2,}/g, '-');
 }
