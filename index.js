@@ -156,7 +156,20 @@ try {
                 }
                 return;
             case 'uruguay_historico_buyers':
+                let uy_hist_buyers = uruguayHistoricoBuyersTransform(obj);
+                if(uy_hist_buyers.length > 0) {
+                    uy_hist_buyers.map(p => {
+                        process.stdout.write( JSON.stringify(p) + '\n' );
+                    })
+                }
+                return;
             case 'uruguay_historico_suppliers':
+                let uy_hist_suppliers = uruguayHistoricoSuppliersTransform(obj);
+                if(uy_hist_suppliers.length > 0) {
+                    uy_hist_suppliers.map(p => {
+                        process.stdout.write( JSON.stringify(p) + '\n' );
+                    })
+                }
                 return;
 
             case 'uruguay_api_contracts':
@@ -1925,8 +1938,8 @@ function ecuadorOCDSContractsTransform(release) {
             let contract = {
                 id: getContractID(country, release.ocid + '-' + award.id),
                 country: country,
-                title: release.tender.title,
-                description: release.tender.description,
+                title: (release.tender.description? release.tender.description : release.tender.title),
+                description: release.tender.title,
                 publish_date: getValidDate(release.date),
                 award_date: getValidDate(award.date),
                 contract_date: getValidDate(getContractForAward(release.contracts, award.id)),
