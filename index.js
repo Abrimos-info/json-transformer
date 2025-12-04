@@ -2090,7 +2090,7 @@ function ecuadorOCDSBuyersTransform(obj) {
         }
     }
    
-    return entities;    
+    return entities;
 }
 
 function ecuadorOCDSSuppliersTransform(obj) {
@@ -2191,6 +2191,68 @@ function getUruguayAwardDetails(award) {
     }
 
     return { amount: sum, currency: currency, description: descriptions.join(', ') }
+}
+
+function uruguayHistoricoBuyersTransform(obj) {
+    let release = obj;
+    let country = 'UY';
+    let entities = [];
+    
+    if(release.parties) {
+        let buyers = getOCDSPartiesByRole(release.parties, 'buyer');
+        if(buyers.length > 0) {
+            buyers.map( buyer => {
+                entities.push( {
+                    id: generateEntityID(buyer.name.toString(), country, 'UY'),
+                    name: buyer.name.toString(),
+                    identifier: buyer.id,
+                    contactPoint: buyer.contactPoint,
+                    country: country,
+                    source: 'uruguay_historico',
+                    updated_date: getValidDate(release.date)
+                } );
+            } );
+        }
+        else if(release.buyer) {
+            entities.push( {
+                id: generateEntityID(release.buyer.name.toString(), country, 'UY'),
+                name: release.buyer.name.toString(),
+                identifier: release.buyer.id,
+                address: {
+                    country: country
+                },
+                country: country,
+                source: 'uruguay_historico',
+                updated_date: getValidDate(release.date)
+            } );
+        }
+    }
+   
+    return entities;    
+}
+
+function uruguayHistoricoSuppliersTransform(obj) {
+    let release = obj;
+    let entities = [];
+    
+    if(release.parties) {
+        release.parties.map( party => {
+            if(party.roles.indexOf('supplier') >= 0 && party.name) {
+                let supplier_country = 'UY';
+                entities.push({
+                    id: generateEntityID(party.name.toString(), supplier_country, 'UY'),
+                    name: party.name.toString(),
+                    identifier: party.id,
+                    country: supplier_country,
+                    contactPoint: party.contactPoint,
+                    source: 'uruguay_historico',
+                    updated_date: getValidDate(release.date)
+                })
+            }
+        } );
+    }
+
+    return entities;
 }
 
 
