@@ -32,56 +32,39 @@ try {
     process.stdin
     .pipe(JSONStream.parse())
     .pipe(es.mapSync(function (obj) {
+        let transformed;
         switch(args.transform) {
             case 'guatecompras':
-                return guatecomprasTransform(obj);
-            
+                transformed = guatecomprasTransform(obj);
+                break;
+
             case 'guatecompras_npg':
-                return guatecomprasNPGTransform(obj);
-            
+                transformed = guatecomprasNPGTransform(obj);
+                break;
+
             case 'guatecompras_proveedores':
-                let gc_proveedores = guatecomprasProveedoresTransform(obj);
-                if(gc_proveedores.length > 0)
-                    gc_proveedores.map(p => { process.stdout.write( JSON.stringify(p) + '\n' ) });
-                return;
-            
+                transformed = guatecomprasProveedoresTransform(obj);
+                break;
+
             case 'guatecompras_historico_contracts':
-                return guatecomprasHistoricoContractsTransform(obj);
+                transformed = guatecomprasHistoricoContractsTransform(obj);
+                break;
             case 'guatecompras_historico_buyers':
-                let buyers = guatecomprasHistoricoBuyersTransform(obj);
-                if(buyers.length > 0) {
-                    buyers.map(b => {
-                        process.stdout.write( JSON.stringify(b) + '\n' );
-                    })
-                }
-                return;
+                transformed = guatecomprasHistoricoBuyersTransform(obj);
+                break;
             case 'guatecompras_historico_suppliers':
-                return guatecomprasHistoricoSuppliersTransform(obj);
-            
+                transformed = guatecomprasHistoricoSuppliersTransform(obj);
+                break;
+
             case 'guatecompras_ocds_contracts':
-                let gc_ocds_contracts = guatecomprasOCDSContractsTransform(obj);
-                if(gc_ocds_contracts.length > 0) {
-                    gc_ocds_contracts.map(c => {
-                        process.stdout.write( JSON.stringify(c) + '\n' );
-                    })
-                }
-                return;
+                transformed = guatecomprasOCDSContractsTransform(obj);
+                break;
             case 'guatecompras_ocds_buyers':
-                let ocds_buyers = guatecomprasOCDSBuyersTransform(obj);
-                if(ocds_buyers.length > 0) {
-                    ocds_buyers.map(b => {
-                        process.stdout.write( JSON.stringify(b) + '\n' );
-                    })
-                }
-                return;
+                transformed = guatecomprasOCDSBuyersTransform(obj);
+                break;
             case 'guatecompras_ocds_suppliers':
-                let ocds_suppliers = guatecomprasOCDSSuppliersTransform(obj);
-                if(ocds_suppliers.length > 0) {
-                    ocds_suppliers.map(s => {
-                        process.stdout.write( JSON.stringify(s) + '\n' );
-                    })
-                }
-                return;
+                transformed = guatecomprasOCDSSuppliersTransform(obj);
+                break;
             
             case 'pnt':
                 return pntTransform(obj);
@@ -98,88 +81,55 @@ try {
                 return proactSuppliersTransform(obj);
 
             case 'opentender_contracts':
-                let ot_contracts = openTenderContractsTransform(obj);
-                if(ot_contracts.length > 0) {
-                    ot_contracts.map(c => {
-                        process.stdout.write( JSON.stringify(c) + '\n' );
-                    })
-                }
-                return;
+                transformed = openTenderContractsTransform(obj);
+                break;
             case 'opentender_buyers':
-                let open_buyers = openTenderBuyersTransform(obj);
-                if(open_buyers.length > 0) {
-                    open_buyers.map(p => {
-                        process.stdout.write( JSON.stringify(p) + '\n' );
-                    })
-                }
-                return;
+                transformed = openTenderBuyersTransform(obj);
+                break;
             case 'opentender_suppliers':
-                let open_suppliers = openTenderSuppliersTransform(obj);
-                if(open_suppliers.length > 0) {
-                    open_suppliers.map(p => {
-                        process.stdout.write( JSON.stringify(p) + '\n' );
-                    })
-                }
-                return;
+                transformed = openTenderSuppliersTransform(obj);
+                break;
             
             case 'ecuador_ocds_contracts':
-                let ec_contracts = ecuadorOCDSContractsTransform(obj);
-                if(ec_contracts.length > 0) {
-                    ec_contracts.map(c => {
-                        process.stdout.write( JSON.stringify(c) + '\n' );
-                    })
-                }
-                return;
+                transformed = ecuadorOCDSContractsTransform(obj);
+                break;
             case 'ecuador_ocds_buyers':
-                let ec_buyers = ecuadorOCDSBuyersTransform(obj);
-                if(ec_buyers.length > 0) {
-                    ec_buyers.map(p => {
-                        process.stdout.write( JSON.stringify(p) + '\n' );
-                    })
-                }
-                return;
+                transformed = ecuadorOCDSBuyersTransform(obj);
+                break;
             case 'ecuador_ocds_suppliers':
-                let ec_suppliers = ecuadorOCDSSuppliersTransform(obj);
-                if(ec_suppliers.length > 0) {
-                    ec_suppliers.map(p => {
-                        process.stdout.write( JSON.stringify(p) + '\n' );
-                    })
-                }
-                return;
+                transformed = ecuadorOCDSSuppliersTransform(obj);
+                break;
             
             case 'uruguay_historico_contracts':
-                let uy_hist_contracts = uruguayHistoricoContractsTransform(obj);
-                if(uy_hist_contracts.length > 0) {
-                    uy_hist_contracts.map(c => {
-                        process.stdout.write( JSON.stringify(c) + '\n' );
-                    })
-                }
-                return;
+                transformed = uruguayOCDSContractsTransform(obj, 'uruguay_historico');
+                break;
             case 'uruguay_historico_buyers':
-                let uy_hist_buyers = uruguayHistoricoBuyersTransform(obj);
-                if(uy_hist_buyers.length > 0) {
-                    uy_hist_buyers.map(p => {
-                        process.stdout.write( JSON.stringify(p) + '\n' );
-                    })
-                }
-                return;
+                transformed = uruguayOCDSBuyersTransform(obj, 'uruguay_historico');
+                break;
             case 'uruguay_historico_suppliers':
-                let uy_hist_suppliers = uruguayHistoricoSuppliersTransform(obj);
-                if(uy_hist_suppliers.length > 0) {
-                    uy_hist_suppliers.map(p => {
-                        process.stdout.write( JSON.stringify(p) + '\n' );
-                    })
-                }
-                return;
+                transformed = uruguayOCDSSuppliersTransform(obj, 'uruguay_historico');
+                break;
 
             case 'uruguay_api_contracts':
+                transformed = uruguayOCDSContractsTransform(obj, 'uruguay_api');
+                break;
             case 'uruguay_api_buyers':
+                transformed = uruguayOCDSBuyersTransform(obj, 'uruguay_api');
+                break;
             case 'uruguay_api_suppliers':
-                return;
+                transformed = uruguayOCDSSuppliersTransform(obj, 'uruguay_api');
+                break;
             
             default:
                 return obj;
         }
+
+        if(transformed.length > 0) {
+            transformed.map(c => {
+                process.stdout.write( JSON.stringify(c) + '\n' );
+            })
+        }
+        else return obj;
     }))
     .pipe(JSONStream.stringify(false))
     .pipe(process.stdout);
@@ -1430,12 +1380,6 @@ function openTenderPartyObjects(obj, role) {
     return parties;
 }
 
-function getContractID(country, id_str) {
-    let id = transliterate(id_str);
-    if(!id.match(country + '_')) id = country + '_' + id;
-    return id;
-}
-
 function getOpenTenderCountry(release, role, name='') {
     let country = '';
     if(release.parties?.length > 0) {
@@ -2123,11 +2067,11 @@ function ecuadorOCDSSuppliersTransform(obj) {
     return entities;
 }
 
-/* * * * * * * * * * * */
-/*  Uruguay Histórico  */
-/* * * * * * * * * * * */
+/* * * * * * * * * * * * * */
+/*  Uruguay Histórico/API  */
+/* * * * * * * * * * * * * */
 
-function uruguayHistoricoContractsTransform(release) {
+function uruguayOCDSContractsTransform(release, source) {
     let country = 'UY';
     let default_currency = 'UYU';
     let contracts = []
@@ -2154,7 +2098,7 @@ function uruguayHistoricoContractsTransform(release) {
                     currency: (details.currency? details.currency : default_currency),
                     method: release.tender?.procurementMethod,
                     method_details: release.tender?.procurementMethodDetails,
-                    source: 'uruguay_historico'
+                    source: source
                 }
 
                 if(award.suppliers?.length > 0 && award.suppliers[0].name) {
@@ -2193,8 +2137,7 @@ function getUruguayAwardDetails(award) {
     return { amount: sum, currency: currency, description: descriptions.join(', ') }
 }
 
-function uruguayHistoricoBuyersTransform(obj) {
-    let release = obj;
+function uruguayOCDSBuyersTransform(release, source) {
     let country = 'UY';
     let entities = [];
     
@@ -2208,7 +2151,7 @@ function uruguayHistoricoBuyersTransform(obj) {
                     identifier: buyer.id,
                     contactPoint: buyer.contactPoint,
                     country: country,
-                    source: 'uruguay_historico',
+                    source: source,
                     updated_date: getValidDate(release.date)
                 } );
             } );
@@ -2222,7 +2165,7 @@ function uruguayHistoricoBuyersTransform(obj) {
                     country: country
                 },
                 country: country,
-                source: 'uruguay_historico',
+                source: source,
                 updated_date: getValidDate(release.date)
             } );
         }
@@ -2231,8 +2174,7 @@ function uruguayHistoricoBuyersTransform(obj) {
     return entities;    
 }
 
-function uruguayHistoricoSuppliersTransform(obj) {
-    let release = obj;
+function uruguayOCDSSuppliersTransform(release, source) {
     let entities = [];
     
     if(release.parties) {
@@ -2245,7 +2187,7 @@ function uruguayHistoricoSuppliersTransform(obj) {
                     identifier: party.id,
                     country: supplier_country,
                     contactPoint: party.contactPoint,
-                    source: 'uruguay_historico',
+                    source: source,
                     updated_date: getValidDate(release.date)
                 })
             }
@@ -2257,6 +2199,12 @@ function uruguayHistoricoSuppliersTransform(obj) {
 
 
 /*  HELPERS  */
+function getContractID(country, id_str) {
+    let id = transliterate(id_str);
+    if(!id.match(country + '_')) id = country + '_' + id;
+    return id;
+}
+
 function getOCDSPartiesByRole(list, role) {
     let parties = [];
 
