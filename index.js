@@ -2084,8 +2084,8 @@ function uruguayOCDSContractsTransform(release, source) {
                 let contract = {
                     id: getContractID(country, release.ocid + '-' + award.id),
                     country: country,
-                    title: (release.tender?.title ? release.tender.title : award.title),
-                    description: (release.tender?.description ? release.tender.description : details.description),
+                    title: (release.tender?.description ? release.tender.description : details.description),
+                    description: (release.tender?.title ? release.tender.title : award.title),
                     publish_date: getValidDate(release.date),
                     award_date: getValidDate(award.date),
                     buyer: {
