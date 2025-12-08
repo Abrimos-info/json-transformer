@@ -2202,6 +2202,7 @@ function uruguayOCDSSuppliersTransform(release, source) {
 function getContractID(country, id_str) {
     let id = transliterate(id_str);
     if(!id.match(country + '_')) id = country + '_' + id;
+    id = id.replace(/[/:?&=#@+%;!]/g, '-');
     return id;
 }
 
