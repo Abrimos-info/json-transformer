@@ -129,6 +129,7 @@ try {
                 process.stdout.write( JSON.stringify(c) + '\n' );
             })
         }
+        else if(transformed.length == 0) return;
         else return obj;
     }))
     .pipe(JSONStream.stringify(false))
@@ -1222,7 +1223,7 @@ function openTenderContractsTransform(obj) {
         else country = getOpenTenderCountry(release, 'buyer', release.buyer.name);
 
         release.awards.map( award => {
-            if(award.suppliers) {
+            if(award.suppliers && award.value?.amount) {
                 let contract = {
                     id: getContractID(country, release.ocid + '-' + award.id),
                     country: country,
