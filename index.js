@@ -1921,7 +1921,7 @@ function ecuadorOCDSContractsTransform(release) {
 }
 
 function getEcuadorCountry(release, role, name='') {
-    let country = '';
+    let country = 'EC';
     if(release.parties?.length > 0) {
         let found = false;
         release.parties.map(party => {
