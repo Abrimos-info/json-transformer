@@ -120,6 +120,16 @@ try {
                 transformed = uruguayOCDSSuppliersTransform(obj, 'uruguay_api');
                 break;
             
+            case 'brasil_ocds_contracts':
+                transformed = brasilOCDSContractsTransform(obj);
+                break;
+            case 'brasil_ocds_buyers':
+                transformed = brasilOCDSBuyersTransform(obj);
+                break;
+            case 'brasil_ocds_suppliers':
+                transformed = brasilOCDSSuppliersTransform(obj);
+                break;
+
             default:
                 return obj;
         }
@@ -2197,6 +2207,179 @@ function uruguayOCDSSuppliersTransform(release, source) {
 
     return entities;
 }
+
+/* * * * * * * * */
+/*  Brasil OCDS  */
+/* * * * * * * * */
+
+function brasilOCDSContractsTransform(release) {
+    let country = 'BR';
+    let contracts = []
+    if(!release.awards) return contracts;
+    
+    if(release.awards.length > 0) {
+        release.awards.map( award => {
+            let contract = {
+                id: getContractID(country, release.ocid + '-' + award.id),
+                country: country,
+                title: (release.tender.description? release.tender.description : release.tender.title),
+                description: release.tender.title,
+                publish_date: getValidDate(release.date),
+                award_date: getValidDate(award.date),
+                buyer: {
+                    id: generateEntityID(release.buyer.name.toString(), country, 'BR'),
+                    name: release.buyer.name.toString(),
+                    country: country
+                },
+                supplier: {},
+                amount: parseFloat(award.value?.amount),
+                currency: award.value?.currency,
+                method: release.tender?.procurementMethod,
+                method_details: release.tender?.procurementMethodDetails,
+                url: 'https://datosabiertos.compraspublicas.gob.ec/PLATAFORMA/ocds/' + release.ocid,
+                source: 'brasil_ocds'
+            }
+
+            if(award.suppliers?.length > 0 && award.suppliers[0].name) {
+                let supplier_country = getBrasilCountry(release, 'supplier', award.suppliers[0].name);
+                contract.supplier = {
+                    id: generateEntityID(award.suppliers[0].name.toString(), supplier_country, country),
+                    name: award.suppliers[0].name.toString(),
+                    country: supplier_country
+                }
+            }
+
+            contracts.push(contract);
+        } );
+    }
+
+    return contracts;
+}
+
+function getBrasilCountry(release, role, name='') {
+    let country = 'BR';
+    if(release.parties?.length > 0) {
+        let found = false;
+        release.parties.map(party => {
+            if(!found && party.roles.indexOf(role) >= 0) {
+                if(party.address?.countryName) {
+                    country = getBrasilCountryCode(party.address?.countryName);
+                }
+                else { 
+                    country = 'BR';
+                }
+                found = true;
+                if(name && name != party.name) {
+                    country = '';
+                    found = false;
+                }
+            }
+        })
+    }
+
+    return country;
+}
+
+function getBrasilCountryCode(name) {
+    switch(name) {
+        case 'BRA':
+        default:
+            return 'BR';
+    }
+}
+
+function brasilOCDSBuyersTransform(obj) {
+    let release = obj;
+    let country = 'BR';
+    let entities = [];
+    
+    if(release.parties) {
+        let buyers = getOCDSPartiesByRole(release.parties, 'buyer');
+        if(buyers.length > 0) {
+            buyers.map( buyer => {
+                let buyerObj = {
+                    id: generateEntityID(buyer.name.toString(), country, 'BR'),
+                    name: buyer.name.toString(),
+                    other_names: [],
+                    identifier: buyer.id,
+                    address: {
+                        locality: buyer.address?.locality,
+                        region: buyer.address?.region,
+                        country: (buyer.address?.countryName)? getBrasilCountryCode(buyer.address.countryName) : country
+                    },
+                    country: country,
+                    source: 'brasil_ocds',
+                    updated_date: getValidDate(release.date)
+                }
+                
+                if(buyer.identifier?.legalName && buyer.identifier.legalName != buyer.name) 
+                    buyerObj.other_names.push(buyer.identifier.legalName.toString());
+
+                if(buyer.additionalIdentifiers?.length > 0) {
+                    buyer.additionalIdentifiers.map( item => {
+                        if(item.legalName) buyerObj.other_names.push(item.legalName.toString());
+                    } );
+                }
+
+                if(buyer.details?.classifications?.length > 0) {
+                    let type = [];
+                    buyer.details.classifications.map( item => {
+                        if(item.description != '') type.push(item.description.toString());
+                    } );
+                    if(type.length > 0) buyerObj.type = type.join(', ');
+                }
+                
+                entities.push(buyerObj);
+            } );
+        }
+        else if(release.buyer) {
+            entities.push( {
+                id: generateEntityID(release.buyer.name.toString(), country, 'BR'),
+                name: release.buyer.name.toString(),
+                identifier: release.buyer.id,
+                address: {
+                    country: country
+                },
+                country: country,
+                source: 'brasil_ocds',
+                updated_date: getValidDate(release.date)
+            } );
+        }
+    }
+   
+    return entities;
+}
+
+function brasilOCDSSuppliersTransform(obj) {
+    let release = obj;
+    let entities = [];
+    
+    if(release.parties) {
+        release.parties.map( party => {
+            if(party.roles.indexOf('supplier') >= 0 && party.name) {
+                let supplier_country = getBrasilCountry(release, 'supplier', party.name);
+                let supplierObj = {
+                    id: generateEntityID(party.name.toString(), supplier_country, 'BR'),
+                    name: party.name.toString(),
+                    identifier: party.id,
+                    country: supplier_country,
+                    source: 'brasil_ocds',
+                    updated_date: getValidDate(release.date)
+                }
+
+                if(party.identifier?.legalName && party.identifier.legalName != party.name) {
+                    supplierObj.other_names = [];
+                    supplierObj.other_names.push(party.identifier.legalName.toString());
+                }
+
+                entities.push(supplierObj);
+            }
+        } );
+    }
+
+    return entities;
+}
+
 
 
 /*  HELPERS  */
