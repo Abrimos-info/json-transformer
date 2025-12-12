@@ -492,7 +492,7 @@ function guatecomprasHistoricoContractsTransform(obj) {
         contract.currency = 'GTQ';
     }
 
-    return contract;
+    return [contract];
 }
 
 function guatecomprasHistoricoBuyersTransform(obj) {
@@ -539,9 +539,9 @@ function guatecomprasHistoricoSuppliersTransform(obj) {
             updated_date: obj.fecha_publicacion
         }
         
-        return supplier;
+        return [supplier];
     }
-    else return;
+    else return [];
 }
 
 
