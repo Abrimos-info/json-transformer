@@ -165,8 +165,8 @@ function guatecomprasTransform(obj) {
 }
 
 function guatecomprasNPGTransform(obj) {
-    if(obj.hasOwnProperty('id') && obj.id == 0) return;
-    if(!obj['Monto'] && !obj.monto) return;
+    if(obj.hasOwnProperty('id') && obj.id == 0) return [];
+    if(!obj['Monto'] && !obj.monto) return [];
     let newObj = {}
 
     Object.keys(obj).map( k => {
