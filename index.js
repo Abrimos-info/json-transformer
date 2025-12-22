@@ -230,7 +230,7 @@ function guatecomprasNPGTransform(obj) {
         }
     } );
 
-    return newObj;
+    return [newObj];
 }
 
 function parseRazonSocial(str) {
