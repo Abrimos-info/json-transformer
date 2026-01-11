@@ -37,7 +37,6 @@ try {
             case 'guatecompras':
                 transformed = guatecomprasTransform(obj);
                 break;
-
             case 'guatecompras_npg':
                 transformed = guatecomprasNPGTransform(obj);
                 break;
@@ -54,6 +53,16 @@ try {
                 break;
             case 'guatecompras_historico_suppliers':
                 transformed = guatecomprasHistoricoSuppliersTransform(obj);
+                break;
+
+            case 'guatecompras_npg_contracts':
+                transformed = guatecomprasNPGContractsTransform(obj);
+                break;
+            case 'guatecompras_npg_buyers':
+                transformed = guatecomprasNPGBuyersTransform(obj);
+                break;
+            case 'guatecompras_npg_suppliers':
+                transformed = guatecomprasNPGSuppliersTransform(obj);
                 break;
 
             case 'guatecompras_ocds_contracts':
@@ -277,9 +286,9 @@ function getMonthNum(str) {
 
 
 
-/* * * * * * * * * * * * * * * * * * * */
-/* Guatecompras Histórico/Proveedores  */
-/* * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * */
+/* Guatecompras Histórico/NPG/Proveedores  */
+/* * * * * * * * * * * * * * * * * * * * * */
 
 function guatecomprasProveedoresTransform(obj) {
     if(!obj['Nombre o razón social'] || obj['Nombre o razón social'].match(/^\W*$/)) return [];
@@ -537,6 +546,98 @@ function guatecomprasHistoricoSuppliersTransform(obj) {
             country: country,
             source: 'guatecompras_historico',
             updated_date: obj.fecha_publicacion
+        }
+        
+        return [supplier];
+    }
+    else return [];
+}
+
+
+function guatecomprasNPGContractsTransform(obj) {
+    let country = 'GT';
+    let contract = {
+        id: getContractID(country, obj.codigoConcurso),
+        country: country,
+        title: obj.descripcionConcurso,
+        description: '',
+        publish_date: obj.fechaPublicacion,
+        award_date: obj.fechaPublicacion,
+        buyer: {
+            id: generateEntityID(obj.entidadCompradora, country, 'GT'),
+            name: obj.entidadCompradora,
+            country: country
+        },
+        procuring_entity: {
+            id: generateEntityID(obj.unidadCompradora + ' UC', country, 'GT'),
+            name: obj.unidadCompradora,
+            country: country
+        },
+        method: obj.modalidad,
+        method_details: obj.submodalidad,
+        status: obj.estatusConcurso,
+        url: 'https://www.guatecompras.gt/PubSinConcurso/ConsultaAnexosPubSinConcurso.aspx?op=2&n=' + obj.codigoConcurso,
+        source: 'guatecompras_npg'
+    }
+
+    if(obj.nit && obj.nombre) {
+        contract.supplier = {
+            id: generateEntityID(parseRazonSocial(obj.nombre), country, 'GT'),
+            name: parseRazonSocial(obj.nombre),
+            country: country
+        }
+    }
+
+    if(obj.monto) {
+        contract.amount = parseFloat(obj.monto);
+        contract.currency = 'GTQ';
+    }
+
+    return [contract];
+}
+
+function guatecomprasNPGBuyersTransform(obj) {
+    let country = 'GT';
+    let entities = [];
+    if(obj.entidadCompradora) {
+        entities.push( {
+            id: generateEntityID(obj.entidadCompradora, country, 'GT'),
+            name: obj.entidadCompradora,
+            classification: 'government_institution',
+            country: country,
+            source: 'guatecompras_npg',
+            updated_date: obj.fechaPublicacion
+        } );
+    }
+    if(obj.unidadCompradora) {
+        entities.push( {
+            id: generateEntityID(obj.unidadCompradora + ' UC', country, 'GT'),
+            name: obj.unidadCompradora,
+            classification: 'buyer_unit',
+            member_of: {
+                id: generateEntityID(obj.entidadCompradora, country, 'GT'),
+                name: obj.entidadCompradora,
+                country: country
+            },
+            country: country,
+            source: 'guatecompras_npg',
+            updated_date: obj.fechaPublicacion
+        } );
+    }
+
+    return entities;
+}
+
+function guatecomprasNPGSuppliersTransform(obj) {
+    if(obj.nombre) {
+        let country = 'GT';
+        let supplier = {
+            id: generateEntityID(obj.nombre, country, 'GT'),
+            name: obj.nombre,
+            identifier: obj.nit,
+            country: country,
+            source: 'guatecompras_npg',
+            updated_date: obj.fechaPublicacion
         }
         
         return [supplier];
