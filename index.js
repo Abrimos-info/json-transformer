@@ -10,6 +10,7 @@ const optionDefinitions = [
     { name: 'data', alias: 'd', type: String },
     { name: 'fieldDelimiter', alias: 'f', type: String, defaultValue: '|' },
     { name: 'valueDelimiter', alias: 'v', type: String, defaultValue: ':' },
+    { name: 'noOutput', alias: 'n', type: Boolean, defaultValue: false }
 ];
 const args = commandLineArgs(optionDefinitions);
 if(args.fieldDelimiter === args.valueDelimiter) {
@@ -145,7 +146,7 @@ try {
 
         if(transformed.length > 0) {
             transformed.map(c => {
-                process.stdout.write( JSON.stringify(c) + '\n' );
+                if(!args.noOutput) process.stdout.write( JSON.stringify(c) + '\n' );
             })
         }
         else if(transformed.length == 0) return;
@@ -243,9 +244,23 @@ function guatecomprasNPGTransform(obj) {
 }
 
 function parseRazonSocial(str) {
-    if(str.match(/.*,.*,.*,.*,.*/) && !str.match(/SOCIEDAD/)) {
+    str = str.trim();
+    if(str.match(/.*,.*,.*,.*,.*/) && !str.match(/SOCIEDAD|COPROPIEDAD/)) {
         let [ apellido1, apellido2, apellido3, nombre1, nombre2 ] = str.split(',');
         return nombre1 + (nombre2? ' ' + nombre2 : '') + ' ' + apellido1 + (apellido2? ' ' + apellido2 : '') + (apellido3? ' ' + apellido3 : '')
+    }
+    return str;
+}
+
+function parseRazonSocialNPG(str) {
+    str = str.trim();
+    if(str.match(/.*,.*,.*,.*,.*/) && !str.match(/SOCIEDAD|COPROPIEDAD|CONSULADO|EMBAJADA|COOPERATIVA/)) {
+        let [ apellido1, apellido2, apellido3, nombre1, nombre2 ] = str.split(',');
+        return nombre1 + (nombre2? ' ' + nombre2 : '') + ' ' + apellido1 + (apellido2? ' ' + apellido2 : '') + (apellido3? ' ' + apellido3 : '')
+    }
+    else if(str.match(/^.*,.*,.*,.*$/) && !str.match(/SOCIEDAD|COPROPIEDAD|CONSULADO|EMBAJADA|COOPERATIVA|,\s/)) {
+        let [ apellido1, apellido2, nombre1, nombre2 ] = str.split(',');
+        return nombre1 + (nombre2? ' ' + nombre2 : '') + ' ' + apellido1 + (apellido2? ' ' + apellido2 : '')
     }
     return str;
 }
@@ -582,8 +597,8 @@ function guatecomprasNPGContractsTransform(obj) {
 
     if(obj.nit && obj.nombre) {
         contract.supplier = {
-            id: generateEntityID(parseRazonSocial(obj.nombre), country, 'GT'),
-            name: parseRazonSocial(obj.nombre),
+            id: generateEntityID(parseRazonSocialNPG(obj.nombre), country, 'GT'),
+            name: parseRazonSocialNPG(obj.nombre),
             country: country
         }
     }
@@ -632,8 +647,8 @@ function guatecomprasNPGSuppliersTransform(obj) {
     if(obj.nombre) {
         let country = 'GT';
         let supplier = {
-            id: generateEntityID(obj.nombre, country, 'GT'),
-            name: obj.nombre,
+            id: generateEntityID(parseRazonSocialNPG(obj.nombre), country, 'GT'),
+            name: parseRazonSocialNPG(obj.nombre),
             identifier: obj.nit,
             country: country,
             source: 'guatecompras_npg',
