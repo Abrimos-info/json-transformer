@@ -2024,11 +2024,12 @@ function ecuadorOCDSContractsTransform(release) {
                 currency: award.value?.currency,
                 method: release.tender?.procurementMethod,
                 method_details: release.tender?.procurementMethodDetails,
-                categories: [ release.tender?.mainProcurementCategory ],
                 status: release.tender?.status,
                 url: 'https://datosabiertos.compraspublicas.gob.ec/PLATAFORMA/ocds/' + release.ocid,
                 source: 'ecuador_ocds'
             }
+
+            if(release.tender?.mainProcurementCategory) contract.categories = [ release.tender?.mainProcurementCategory ];
 
             if(award.suppliers?.length > 0 && award.suppliers[0].name) {
                 let supplier_country = getEcuadorCountry(release, 'supplier', award.suppliers[0].name);
