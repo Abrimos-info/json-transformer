@@ -2353,7 +2353,6 @@ function brasilOCDSContractsTransform(release) {
                 currency: award.value?.currency,
                 method: release.tender?.procurementMethod,
                 method_details: release.tender?.procurementMethodDetails,
-                url: 'https://datosabiertos.compraspublicas.gob.ec/PLATAFORMA/ocds/' + release.ocid,
                 source: 'brasil_ocds'
             }
 
