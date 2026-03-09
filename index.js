@@ -76,6 +76,10 @@ try {
                 transformed = guatecomprasOCDSSuppliersTransform(obj);
                 break;
             
+            case 'guatecompras_ocds_items':
+                transformed = guatecomprasOCDSItemsTransform(obj);
+                break;
+
             case 'pnt':
                 return pntTransform(obj);
             case 'pnt_minimal':
@@ -915,6 +919,67 @@ function getOCDSSupplierID(party) {
     let str = party.id;
     let parts = str.split('-');
     return parts[parts.length - 1];
+}
+
+function getItemAttributeFieldName(str) {
+    return str.toLowerCase().replace(/\s/g, '_');
+}
+
+function guatecomprasOCDSItemsTransform(obj) {
+    let items = [];
+    let release = obj;
+
+    if(release.tender && release.tender.items && release.tender.items.length > 0) {
+        release.tender.items.map( item => {
+            let itemObj = {
+                id: (item.classification)? item.classification.id : item.id,
+                description: item.description,
+                quantity: item.quantity,
+                unit: item.unit.name
+            }
+            if(item.classification) itemObj.classification = 'UNSPSC';
+            
+            if(item.attributes && item.attributes.length > 0) {
+                itemObj.attributes = {}
+                item.attributes.map( attr => {
+                    let attrName = getItemAttributeFieldName(attr.name);
+                    if(!itemObj.attributes.hasOwnProperty(attrName)) {
+                        itemObj.attributes[attrName] = attr.value;
+                    }
+                    else {
+                        if(typeof(itemObj.attributes[attrName]) === "string") {
+                            let tempAttr = itemObj.attributes[attrName];
+                            itemObj.attributes[attrName] = [];
+                            itemObj.attributes[attrName].push(tempAttr);
+                        }
+                        itemObj.attributes[attrName].push(attr.value);
+                    }
+                } );
+            }
+
+            // Si solo hay un item, calcular precio unitario del award
+            if(release.tender.items.length == 1 && release.awards?.length == 1) { 
+                itemObj.unit_price = release.awards[0].value.amount / itemObj.quantity;
+            }
+            // Calcular los máximos y mínimos según los bids
+            if(release.bids && release.bids.details?.length > 0) {
+                let max = 0;
+                let min = -1;
+                release.bids.details.map( bid => {
+                    max = Math.max(max, bid.value.amount);
+                    if(min >= 0) min = Math.min(min, bid.value.amount);
+                    else min = max;
+                } )
+                itemObj.maxBid = max;
+                itemObj.minBid = min;
+            }
+
+
+            items.push(itemObj);
+        } )
+    }
+
+    return items;
 }
 
 
