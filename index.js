@@ -930,12 +930,14 @@ function guatecomprasOCDSItemsTransform(obj) {
     let release = obj;
 
     if(release.tender && release.tender.items && release.tender.items.length > 0) {
+        let date = release.tender.datePublished;
         release.tender.items.map( item => {
             let itemObj = {
                 id: (item.classification)? item.classification.id : item.id,
                 description: item.description,
                 quantity: item.quantity,
-                unit: item.unit.name
+                unit: item.unit.name,
+                date: date
             }
             if(item.classification) itemObj.classification = 'UNSPSC';
             
