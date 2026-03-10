@@ -945,17 +945,9 @@ function guatecomprasOCDSItemsTransform(obj) {
                 itemObj.attributes = {}
                 item.attributes.map( attr => {
                     let attrName = getItemAttributeFieldName(attr.name);
-                    if(!itemObj.attributes.hasOwnProperty(attrName)) {
-                        itemObj.attributes[attrName] = attr.value;
-                    }
-                    else {
-                        if(typeof(itemObj.attributes[attrName]) === "string") {
-                            let tempAttr = itemObj.attributes[attrName];
-                            itemObj.attributes[attrName] = [];
-                            itemObj.attributes[attrName].push(tempAttr);
-                        }
-                        itemObj.attributes[attrName].push(attr.value);
-                    }
+                    if(!itemObj.attributes.hasOwnProperty(attrName))
+                        itemObj.attributes[attrName] = [];
+                    itemObj.attributes[attrName].push(attr.value);
                 } );
             }
 
