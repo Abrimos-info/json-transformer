@@ -922,7 +922,9 @@ function getOCDSSupplierID(party) {
 }
 
 function getItemAttributeFieldName(str) {
-    return str.toLowerCase().replace(/\s/g, '_');
+    return str.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s/g, '_');
 }
 
 function guatecomprasOCDSItemsTransform(obj) {
@@ -940,6 +942,7 @@ function guatecomprasOCDSItemsTransform(obj) {
                 date: date
             }
             if(item.classification) itemObj.classification = 'UNSPSC';
+            else itemObj.classification = '-';
             
             if(item.attributes && item.attributes.length > 0) {
                 itemObj.attributes = {}
