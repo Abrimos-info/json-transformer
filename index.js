@@ -939,7 +939,8 @@ function guatecomprasOCDSItemsTransform(obj) {
                 description: item.description,
                 quantity: item.quantity,
                 unit: item.unit.name,
-                date: date
+                date: date,
+                ocid: release.ocid
             }
             if(item.classification) itemObj.classification = 'UNSPSC';
             else itemObj.classification = '-';
