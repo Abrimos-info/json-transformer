@@ -559,8 +559,8 @@ function guatecomprasHistoricoSuppliersTransform(obj) {
     if(obj.nombre) {
         let country = 'GT';
         let supplier = {
-            id: generateEntityID(obj.nombre, country, 'GT'),
-            name: obj.nombre,
+            id: generateEntityID(parseRazonSocial(obj.nombre), country, 'GT'),
+            name: parseRazonSocial(obj.nombre),
             identifier: obj.nit,
             country: country,
             source: 'guatecompras_historico',
