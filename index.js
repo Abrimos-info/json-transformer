@@ -956,7 +956,8 @@ function guatecomprasOCDSItemsTransform(obj) {
 
             // Si solo hay un item, calcular precio unitario del award
             if(release.tender.items.length == 1 && release.awards?.length == 1) { 
-                itemObj.unit_price = release.awards[0].value.amount / itemObj.quantity;
+                itemObj.award = release.awards[0].value.amount;
+                itemObj.awardUnitPrice = release.awards[0].value.amount / itemObj.quantity;
             }
             // Calcular los máximos y mínimos según los bids
             if(release.bids && release.bids.details?.length > 0) {
@@ -967,8 +968,11 @@ function guatecomprasOCDSItemsTransform(obj) {
                     if(min >= 0) min = Math.min(min, bid.value.amount);
                     else min = max;
                 } )
+                itemObj.bids = release.bids.details.length;
                 itemObj.maxBid = max;
+                itemObj.maxBidUnitPrice = max / itemObj.quantity;
                 itemObj.minBid = min;
+                itemObj.minBidUnitPrice = min / itemObj.quantity;
             }
 
 
