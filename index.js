@@ -959,23 +959,23 @@ function guatecomprasOCDSItemsTransform(obj) {
             if(release.tender.items.length == 1 && release.awards?.length == 1) { 
                 itemObj.award = release.awards[0].value.amount;
                 itemObj.awardUnitPrice = release.awards[0].value.amount / itemObj.quantity;
-            }
-            // Calcular los máximos y mínimos según los bids
-            if(release.bids && release.bids.details?.length > 0) {
-                let max = 0;
-                let min = -1;
-                release.bids.details.map( bid => {
-                    max = Math.max(max, bid.value.amount);
-                    if(min >= 0) min = Math.min(min, bid.value.amount);
-                    else min = max;
-                } )
-                itemObj.bids = release.bids.details.length;
-                itemObj.maxBid = max;
-                itemObj.maxBidUnitPrice = max / itemObj.quantity;
-                itemObj.minBid = min;
-                itemObj.minBidUnitPrice = min / itemObj.quantity;
-            }
 
+                // Calcular los máximos y mínimos según los bids
+                if(release.bids && release.bids.details?.length > 0) {
+                    let max = 0;
+                    let min = -1;
+                    release.bids.details.map( bid => {
+                        max = Math.max(max, bid.value.amount);
+                        if(min >= 0) min = Math.min(min, bid.value.amount);
+                        else min = max;
+                    } )
+                    itemObj.bids = release.bids.details.length;
+                    itemObj.maxBid = max;
+                    itemObj.maxBidUnitPrice = max / itemObj.quantity;
+                    itemObj.minBid = min;
+                    itemObj.minBidUnitPrice = min / itemObj.quantity;
+                }
+            }
 
             items.push(itemObj);
         } )
