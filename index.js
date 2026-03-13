@@ -143,6 +143,16 @@ try {
             case 'brasil_ocds_suppliers':
                 transformed = brasilOCDSSuppliersTransform(obj);
                 break;
+            
+            case 'cemefi_oportunidades':
+                transformed = cemefiOportunidadesTransform(obj);
+                break;
+            case 'cemefi_usuarios':
+                transformed = cemefiUsuariosTransform(obj);
+                break;
+            case 'cemefi_inscripciones':
+                transformed = cemefiInscripcionesTransform(obj);
+                break;
 
             default:
                 return obj;
@@ -2563,6 +2573,67 @@ function brasilOCDSSuppliersTransform(obj) {
     return entities;
 }
 
+
+/* * * * * */
+/*  CEMEFI */
+/* * * * * */
+
+function cemefiOportunidadesTransform(obj) {
+    let lines = [];
+    
+    if(obj.hasOwnProperty('FechaInsercion')) obj['FechaInsercion'] = fixCemefiDate(obj['FechaInsercion']);
+    if(obj.hasOwnProperty('FechaModificacion')) obj['FechaModificacion'] = fixCemefiDate(obj['FechaModificacion']);
+    if(obj.hasOwnProperty('FechaReactivacion')) obj['FechaReactivacion'] = fixCemefiDate(obj['FechaReactivacion']);
+    if(obj.hasOwnProperty('FechaLimiteInscripcion')) obj['FechaLimiteInscripcion'] = fixCemefiDate(obj['FechaLimiteInscripcion']);
+    if(obj.hasOwnProperty('FechaFinActividad')) obj['FechaFinActividad'] = fixCemefiDate(obj['FechaFinActividad']);
+    if(obj.hasOwnProperty('FechaBaja')) obj['FechaBaja'] = fixCemefiDate(obj['FechaBaja']);
+    
+    if(obj.hasOwnProperty('NumeroVacantes')) obj['NumeroVacantes'] = parseFloat(obj['NumeroVacantes']);
+    if(obj.hasOwnProperty('NumVisitas')) obj['NumVisitas'] = parseFloat(obj['NumVisitas']);
+    if(obj.hasOwnProperty('NumInscritos')) obj['NumInscritos'] = parseFloat(obj['NumInscritos']);
+    if(obj.hasOwnProperty('NumeroMaximoIntereses')) obj['NumeroMaximoIntereses'] = parseFloat(obj['NumeroMaximoIntereses']);
+
+    lines.push(obj);
+
+    return lines;
+}
+
+function cemefiUsuariosTransform(obj) {
+    let lines = [];
+    
+    if(obj.hasOwnProperty('FechaRegistro')) obj['FechaRegistro'] = fixCemefiDate(obj['FechaRegistro']);
+    if(obj.hasOwnProperty('FechaUltActualizacionPerfil')) obj['FechaUltActualizacionPerfil'] = fixCemefiDate(obj['FechaUltActualizacionPerfil']);
+    if(obj.hasOwnProperty('FechaUltimoAcceso')) obj['FechaUltimoAcceso'] = fixCemefiDate(obj['FechaUltimoAcceso']);
+    if(obj.hasOwnProperty('FechaAportacionUltima')) obj['FechaAportacionUltima'] = fixCemefiDate(obj['FechaAportacionUltima']);
+    
+    if(obj.hasOwnProperty('NumeroAportaciones')) obj['NumeroAportaciones'] = parseFloat(obj['NumeroAportaciones']);
+
+
+    lines.push(obj);
+
+    return lines;
+}
+
+function cemefiInscripcionesTransform(obj) {
+    let lines = [];
+    
+    if(obj.hasOwnProperty('FechaInscripcion')) obj['FechaInscripcion'] = fixCemefiDate(obj['FechaInscripcion']);
+    if(obj.hasOwnProperty('FechaAltaOportunidad')) obj['FechaAltaOportunidad'] = fixCemefiDate(obj['FechaAltaOportunidad']);
+    if(obj.hasOwnProperty('FechaRegistroUsuario')) obj['FechaRegistroUsuario'] = fixCemefiDate(obj['FechaRegistroUsuario']);
+    if(obj.hasOwnProperty('UltimoAccesoUsuario')) obj['UltimoAccesoUsuario'] = fixCemefiDate(obj['UltimoAccesoUsuario']);
+    
+    if(obj.hasOwnProperty('PuntuacionTest')) obj['PuntuacionTest'] = parseFloat(obj['PuntuacionTest']);
+
+
+    lines.push(obj);
+
+    return lines;
+}
+
+function fixCemefiDate(str) {
+    if(str == "NULL") return null;
+    return str.replace(' ', 'T') + 'Z';
+}
 
 
 /*  HELPERS  */
