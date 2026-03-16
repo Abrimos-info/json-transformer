@@ -940,6 +940,7 @@ function getItemAttributeFieldName(str) {
 function guatecomprasOCDSItemsTransform(obj) {
     let items = [];
     let release = obj;
+    let country = 'GT';
 
     if(release.tender && release.tender.items && release.tender.items.length > 0) {
         let date = release.tender.datePublished;
@@ -965,6 +966,24 @@ function guatecomprasOCDSItemsTransform(obj) {
                 } );
             }
 
+            // Agregar el buyer
+            if(release.parties) {
+                let buyer = getGuatecomprasOCDSBuyer(release.parties);
+                if(!buyer) buyer = release.buyer;
+                itemObj.buyer = {
+                    id: generateEntityID(buyer.name, country, 'GT'),
+                    name: buyer.name
+                }
+                
+                let uc = getGuatecomprasOCDSBuyer(release.parties, true);
+                if(uc) {
+                    itemObj.procuring_entity = {
+                        id: generateEntityID(uc.name + ' UC', country, 'GT'),
+                        name: uc.name
+                    }
+                }
+            }
+
             // Si solo hay un item, calcular precio unitario del award
             if(release.tender.items.length == 1 && release.awards?.length == 1) { 
                 itemObj.award = release.awards[0].value.amount;
@@ -984,6 +1003,29 @@ function guatecomprasOCDSItemsTransform(obj) {
                     itemObj.maxBidUnitPrice = max / itemObj.quantity;
                     itemObj.minBid = min;
                     itemObj.minBidUnitPrice = min / itemObj.quantity;
+                }
+
+                // Agregar el supplier
+                if(release.parties) {
+                    let suppliers = [];
+                    if(release.parties.supplier?.length > 0) {
+                        release.parties.supplier.map( s => {
+                            release.awards[0].suppliers.map( a => {
+                                if(a.id == s.id) suppliers.push(s);
+                            } )
+                        } )
+                    }
+                    else
+                        suppliers = release.awards[0].suppliers;
+                    
+                    if(suppliers.length > 0) {
+                        let supplier_country = getGuatecomprasOCDSCountry(release.parties, suppliers[0].name, 'GT');
+                        itemObj.supplier = {
+                            id: generateEntityID(parseRazonSocial(suppliers[0].name), supplier_country, 'GT'),
+                            name: parseRazonSocial(suppliers[0].name),
+                            country: supplier_country
+                        }
+                    }
                 }
             }
 
