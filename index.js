@@ -517,6 +517,15 @@ function guatecomprasHistoricoContractsTransform(obj) {
         source: 'guatecompras_historico'
     }
 
+    if(contract.buyer.name == "OFICINA DE SERVICIOS PARA PROYECTOS DE LAS NACIONES UNIDAS -UNOPS-") {
+        let temp_procuring_entity = JSON.parse(JSON.stringify(contract.procuring_entity));
+        let temp_buyer = JSON.parse(JSON.stringify(contract.buyer));
+        contract.procuring_entity = temp_buyer;
+        contract.procuring_entity.id = generateEntityID(contract.procuring_entity.name + ' UC', country, 'GT')
+        contract.buyer.name = fixUnopsBuyer(temp_procuring_entity.name);
+        contract.buyer.id = generateEntityID(contract.buyer.name, country, 'GT');
+    }
+
     if(obj.nit && obj.nombre) {
         contract.supplier = {
             id: generateEntityID(parseRazonSocial(obj.nombre), country, 'GT'),
@@ -533,9 +542,33 @@ function guatecomprasHistoricoContractsTransform(obj) {
     return [contract];
 }
 
+function fixUnopsBuyer(str) {
+    switch(str) {
+        case 'INSTITUTO GUATEMALTECO DE SEGURIDAD SOCIAL SOCIAL - IGSS-':
+        case 'INSTITUTO GUATEMALTECO DE SEGURIDAD SOCIAL - IGSS':
+        case 'AMEDIGSS':
+            return 'INSTITUTO GUATEMALTECO DE SEGURIDAD SOCIAL -IGSS-';        
+        case 'SUPERINTENDENCIA DE ADMINISTRACIÓN TRIBUTARIA-SAT-':
+            return 'SUPERINTENDENCIA DE ADMINISTRACION TRIBUTARIA -SAT-';
+        case 'INSTITUTO DE FOMENTO MUNICIPAL - INFOM -':
+            return 'INSTITUTO DE FOMENTO MUNICIPAL -INFOM-';
+        
+        default:
+            return str;
+    }
+}
+
 function guatecomprasHistoricoBuyersTransform(obj) {
     let country = 'GT';
     let entities = [];
+
+    if(obj.entidad_compradora && obj.entidad_compradora == "OFICINA DE SERVICIOS PARA PROYECTOS DE LAS NACIONES UNIDAS -UNOPS-") {
+        let temp_entidad = obj.unidad_compradora;
+        let temp_unidad = obj.entidad_compradora;
+        obj.unidad_compradora = temp_unidad;
+        obj.entidad_compradora = fixUnopsBuyer(temp_entidad);
+    }
+
     if(obj.entidad_compradora) {
         entities.push( {
             id: generateEntityID(obj.entidad_compradora, country, 'GT'),
@@ -1022,8 +1055,7 @@ function guatecomprasOCDSItemsTransform(obj) {
                         let supplier_country = getGuatecomprasOCDSCountry(release.parties, suppliers[0].name, 'GT');
                         itemObj.supplier = {
                             id: generateEntityID(parseRazonSocial(suppliers[0].name), supplier_country, 'GT'),
-                            name: parseRazonSocial(suppliers[0].name),
-                            country: supplier_country
+                            name: parseRazonSocial(suppliers[0].name)
                         }
                     }
                 }
