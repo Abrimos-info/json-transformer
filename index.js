@@ -400,7 +400,7 @@ function guatecomprasProveedoresTransform(obj) {
                 break;
             case 'Actividad Económica':
                 if(obj[k] != '[--NO ESPECIFICADO--]')
-                    newObj.main_activity = obj[k];
+                    newObj.economic_activities = [obj[k]];
                 break;
 
             case 'Notario':
