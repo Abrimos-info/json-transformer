@@ -361,7 +361,8 @@ function guatecomprasProveedoresTransform(obj) {
             case 'Nombre comercial 5':
             case 'Nombre comercial 5':
                 if(!newObj.hasOwnProperty('other_names')) newObj['other_names'] = [];
-                newObj['other_names'].push(obj[k]);
+                if(obj[k] != newObj?.name)
+                    newObj['other_names'].push(obj[k]);
                 break;
             case 'Existen otros nombres comerciales':
                 newObj['other_names'].push(...obj[k]);
