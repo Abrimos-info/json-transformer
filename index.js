@@ -276,6 +276,10 @@ function parseRazonSocialNPG(str) {
         let [ apellido1, apellido2, nombre1, nombre2 ] = str.split(',');
         return nombre1 + (nombre2? ' ' + nombre2 : '') + ' ' + apellido1 + (apellido2? ' ' + apellido2 : '')
     }
+    else if(str.match(/\w* \w*  \w* \w*/)){
+        let [ apellido1, apellido2, nombre1, nombre2 ] = str.split(/\s{1,2}/);
+        return nombre1 + ' ' + nombre2 + ' ' + apellido1 + ' ' + apellido2;
+    }
     return str;
 }
 
