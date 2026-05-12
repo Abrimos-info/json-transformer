@@ -525,10 +525,10 @@ function guatecomprasHistoricoContractsTransform(obj) {
     if(contract.buyer.name == "OFICINA DE SERVICIOS PARA PROYECTOS DE LAS NACIONES UNIDAS -UNOPS-") {
         let temp_procuring_entity = JSON.parse(JSON.stringify(contract.procuring_entity));
         let temp_buyer = JSON.parse(JSON.stringify(contract.buyer));
-        contract.procuring_entity = temp_buyer;
-        contract.procuring_entity.id = generateEntityID(contract.procuring_entity.name + ' UC', country, 'GT')
         contract.buyer.name = fixUnopsBuyer(temp_procuring_entity.name);
         contract.buyer.id = generateEntityID(contract.buyer.name, country, 'GT');
+        contract.procuring_entity = temp_buyer;
+        contract.procuring_entity.id = generateEntityID(getUnopsBuyerInitials(contract.buyer.name) + ' ' + contract.procuring_entity.name + ' UC', country, 'GT')
     }
 
     if(obj.nit && obj.nombre) {
@@ -563,6 +563,25 @@ function fixUnopsBuyer(str) {
     }
 }
 
+function getUnopsBuyerInitials(str) {
+    switch(str) {
+        case 'INSTITUTO GUATEMALTECO DE SEGURIDAD SOCIAL -IGSS-':
+            return 'IGSS';
+        case 'SUPERINTENDENCIA DE ADMINISTRACION TRIBUTARIA -SAT-':
+            return 'SAT';
+        case 'INSTITUTO DE FOMENTO MUNICIPAL -INFOM-':
+            return 'INFOM';
+        case 'MINISTERIO DE CULTURA Y DEPORTES':
+            return 'MCD';
+        case 'UNIDAD DE CONSTRUCCIÓN DE EDIFICIOS DEL ESTADO':
+            return 'UCEE';
+        case 'ORGANISMO JUDICIAL':
+            return 'OJ';
+        default:
+            return str;
+    }
+}
+
 function guatecomprasHistoricoBuyersTransform(obj) {
     let country = 'GT';
     let entities = [];
@@ -585,7 +604,7 @@ function guatecomprasHistoricoBuyersTransform(obj) {
         } );
     }
     if(obj.unidad_compradora) {
-        entities.push( {
+        let uc = {
             id: generateEntityID(obj.unidad_compradora + ' UC', country, 'GT'),
             name: obj.unidad_compradora,
             classification: 'buyer_unit',
@@ -597,7 +616,10 @@ function guatecomprasHistoricoBuyersTransform(obj) {
             country: country,
             source: 'guatecompras_historico',
             updated_date: obj.fecha_publicacion
-        } );
+        }
+        if(obj.unidad_compradora == "OFICINA DE SERVICIOS PARA PROYECTOS DE LAS NACIONES UNIDAS -UNOPS-")
+            uc.id = generateEntityID(getUnopsBuyerInitials(obj.entidad_compradora) + ' ' + obj.unidad_compradora + ' UC', country, 'GT')
+        entities.push(uc);
     }
 
     return entities;
