@@ -241,7 +241,7 @@ function guatecomprasNPGTransform(obj) {
                 break;
             case 'NIT o País Proveedor':
             case 'nitPaisProveedor':
-                newObj.nit = obj[k].toString();
+                if(obj[k]) newObj.nit = obj[k].toString();
                 break;
             case 'Nombre Proveedor':
             case 'nombreProveedor':
@@ -750,6 +750,7 @@ function guatecomprasOCDSContractsTransform(obj) {
 
     if(release?.tender?.status == "complete") {
         if(release.awards && release.awards.length > 0) {
+            if(release.awards.length > 1) console.log(release.ocid, release.awards.length);
             release.awards.map( award => {
                 if(award.status == "active") {
                     let flat = {
