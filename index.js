@@ -1005,14 +1005,26 @@ function guatecomprasOCDSItemsTransform(obj) {
 
     if(release.tender && release.tender.items && release.tender.items.length > 0) {
         let date = release.tender.datePublished;
-        release.tender.items.map( item => {
+        release.tender.items.map( (item, index) => {
             let itemObj = {
+                item_key: release.ocid + '-' + (item.id ?? index),
                 id: (item.classification)? item.classification.id : item.id,
                 description: item.description,
                 quantity: item.quantity,
                 unit: item.unit.name,
                 date: date,
-                ocid: release.ocid
+                ocid: release.ocid,
+                attributes: null,
+                buyer: null,
+                procuring_entity: null,
+                award: null,
+                awardUnitPrice: null,
+                bids: null,
+                maxBid: null,
+                maxBidUnitPrice: null,
+                minBid: null,
+                minBidUnitPrice: null,
+                supplier: null
             }
             if(item.classification) itemObj.classification = 'UNSPSC';
             else itemObj.classification = '-';
