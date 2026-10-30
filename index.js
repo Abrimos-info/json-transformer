@@ -750,7 +750,7 @@ function guatecomprasOCDSContractsTransform(obj) {
 
     if(release?.tender?.status == "complete") {
         if(release.awards && release.awards.length > 0) {
-            if(release.awards.length > 1) console.log(release.ocid, release.awards.length);
+            // if(release.awards.length > 1) console.log(release.ocid, release.awards.length);
             release.awards.map( award => {
                 if(award.status == "active") {
                     let flat = {
